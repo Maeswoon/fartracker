@@ -1,0 +1,18 @@
+[Unit]
+Description=FARTracker Django backend (gunicorn)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/home/ubuntu/backend
+EnvironmentFile=/home/ubuntu/backend/.env
+ExecStart=/bin/bash /home/ubuntu/backend/run-prod.sh
+Restart=always
+RestartSec=5
+StandardOutput=append:/var/log/fartracker/backend.log
+StandardError=append:/var/log/fartracker/backend.log
+
+[Install]
+WantedBy=multi-user.target

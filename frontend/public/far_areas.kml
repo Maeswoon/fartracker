@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="far_areas" id="far_areas">
+	<SimpleField name="id" type="float"></SimpleField>
+</Schema>
+<Folder><name>far_areas</name>
+  <Placemark>
+	<name>launch_area</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <MultiGeometry><LineString><coordinates>-117.810071198097,35.3462284126869 -117.810076824754,35.348102089403 -117.807809282061,35.3481189693734 -117.807769895463,35.3461890260892 -117.81006557144,35.3462059060596</coordinates></LineString></MultiGeometry>
+  </Placemark>
+  <Placemark>
+	<name>spectator_area</name>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+      <MultiGeometry><LineString><coordinates>-117.824366032876,35.3534838236363 -117.824363286307,35.3541686086384 -117.825563067828,35.3541617410664 -117.82555773575,35.3534630584564 -117.824366032876,35.3534838236363</coordinates></LineString></MultiGeometry>
+  </Placemark>
+</Folder>
+</Document></kml>

@@ -1,0 +1,203 @@
+@import "tailwindcss";
+
+:root {
+  /* Palette */
+  --color-bg:              #454545;
+  --color-text:            #f0f0f0;
+  --color-text-muted:      #cccccc;
+  --color-surface:         #ffffff;
+  --color-accent-red:      #c0392b;
+  --color-accent-orange:   #e8622a;
+  --color-accent-orange-lt:#f5a857;
+  --color-heading-bg:      #fde8c8;
+  --color-nav-bg:          #333333;
+  --color-nav-border:      #555555;
+  --color-text-on-light:   #1a1a1a;
+
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+html, body, #app {
+  background-color: var(--color-bg);
+  color: var(--color-text);
+  min-height: 100vh;
+  width: 100%;
+  margin: 0;
+}
+
+a {
+  font-weight: 500;
+  color: var(--color-accent-red);
+  text-decoration: inherit;
+}
+a:hover {
+  color: var(--color-accent-orange);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  margin: 10px 0;
+  padding: 5px 10px;
+  letter-spacing: 1px;
+  background-color: var(--color-heading-bg);
+  border-left: 5px solid var(--color-accent-red);
+  color: var(--color-text-on-light);
+  transition: all 0.3s ease-in-out;
+}
+
+h1 { font-size: 2.5rem; }
+h2 { font-size: 2rem; }
+h3 { font-size: 1.75rem; }
+
+@media (max-width: 600px) {
+  h1 { font-size: 1.8rem; }
+  h2 { font-size: 1.6rem; }
+  h3 { font-size: 1.4rem; }
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: var(--color-text);
+  color: var(--color-surface);
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: var(--color-accent-red);
+}
+
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  width: 100%;
+  max-width: 100%;
+  background-color: var(--color-surface);
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+}
+
+thead {
+  background-color: #f0f0f0;
+}
+
+th {
+  text-align: left;
+  padding: 12px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid #ddd;
+  color: var(--color-text-on-light);
+}
+
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #eee;
+  color: var(--color-text-on-light);
+}
+
+tbody tr:nth-child(even) {
+  background-color: #fafafa;
+}
+
+tbody tr:hover {
+  background-color: #f1f7ff;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.dashboard-container {
+  display: flex;
+  flex-direction: row;
+
+  gap: 20px;
+  padding: 20px;
+  justify-content: space-evenly;
+  align-items: flex-start;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.center-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  max-width: 25vw;
+}
+
+.status-flag {
+  display: inline-block;
+  padding: 10px 20px;
+  border-radius: 16px;
+  color: var(--color-surface);
+  font-weight: 700;
+  font-family: sans-serif;
+  font-size: 1rem;
+  text-transform: capitalize;
+  min-width: 100px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.3s ease;
+}
+
+.status-green  { background-color: #28a745; }
+.status-yellow { background-color: #ffc107; color: #333; }
+.status-red    { background-color: #dc3545; }
+
+.form-card {
+  background-color: var(--color-surface);
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  padding: 20px;
+  width: 300px;
+  flex-shrink: 0;
+}
+
+.form-card label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 5px;
+  font-size: 14px;
+  color: var(--color-text-on-light);
+}
+
+.form-card input,
+.form-card select,
+.form-card textarea {
+  width: 100%;
+  padding: 8px 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+  color: var(--color-text-on-light);
+}
+
+.form-card button {
+  background-color: var(--color-accent-red);
+  color: var(--color-surface);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.form-card button:hover {
+  background-color: var(--color-accent-orange);
+}

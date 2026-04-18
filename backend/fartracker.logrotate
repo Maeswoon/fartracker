@@ -1,0 +1,10 @@
+/var/log/fartracker/backend.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+    create 0644 ubuntu ubuntu
+}
