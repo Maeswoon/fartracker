@@ -1,51 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
-import { getSiteStatus, getTeams } from '@/api'
-import type { SiteStatusResponse, Team } from '@/types'
+import { getTeams } from '@/api'
+import type { Team } from '@/types'
+import { useSiteStatusStore } from '@/stores/site_status'
 
-const siteStatusData = ref<SiteStatusResponse | null>(null)
-const siteStatusLoading = ref(true)
-const siteStatusError = ref<string | null>(null)
-
-const flagColor = computed(() => {
-  if (!siteStatusData.value?.status) return ''
-  return siteStatusData.value.status.split(' ')[0].toLowerCase()
-})
-
-const explanation = computed(() => {
-  if (!siteStatusData.value?.status) return ''
-  if (siteStatusData.value.status === 'Red Flag') {
-    return 'We are in a salvo; nobody is allowed to be at the pads unless filling LOX. Please go to a bunker immediately and do not come out until clearance is given over the speakers.'
-  } else if (siteStatusData.value.status === 'Yellow Flag') {
-    return 'Only critical launch personnel are allowed at bunkers; all other attendees are not required to be in bunkers. Monitor the PA for a change of status.'
-  } else {
-    return 'Pad access is unrestricted for teams and spectators.'
-  }
-})
-
-const localTime = computed(() =>
-  siteStatusData.value?.timestamp ? new Date(siteStatusData.value.timestamp).toLocaleString() : ''
-)
-
-async function fetchStatus() {
-  try {
-    siteStatusData.value = await getSiteStatus()
-    siteStatusLoading.value = false
-  } catch {
-    siteStatusError.value = 'Failed to load site status'
-    siteStatusLoading.value = false
-  }
-}
+const siteStatus = useSiteStatusStore()
+const { data: siteStatusData, loading: siteStatusLoading, error: siteStatusError, flagColor, localTime, explanation } = storeToRefs(siteStatus)
 
 const teams = ref<Team[]>([])
 const teamsLoading = ref(true)
 const teamsError = ref<string | null>(null)
 
 onMounted(async () => {
-  fetchStatus()
-  siteStatusIntervalId = setInterval(fetchStatus, 10000)
-
+  siteStatus.startPolling()
   try {
     teams.value = await getTeams()
   } catch {
@@ -55,9 +24,7 @@ onMounted(async () => {
   }
 })
 
-let siteStatusIntervalId: ReturnType<typeof setInterval>
-
-onUnmounted(() => clearInterval(siteStatusIntervalId))
+onUnmounted(() => siteStatus.stopPolling())
 </script>
 
 <template>
