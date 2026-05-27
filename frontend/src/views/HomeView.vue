@@ -34,15 +34,15 @@ onUnmounted(() => siteStatus.stopPolling())
       <div v-if="siteStatusLoading">Loading...</div>
       <div v-else-if="siteStatusError">{{ siteStatusError }}</div>
       <template v-else-if="siteStatusData">
-        <div class="center-container">
-          <div :class="`status-flag status-${flagColor}`">{{ siteStatusData.status }}</div>
-          <br />
-          <p>As of {{ localTime }}</p>
-        </div>
-        <br />
-        <div class="center-container">
-          <h4>What this means</h4>
-          <p>{{ explanation }}</p>
+        <div class="site-status-block">
+          <div class="center-container">
+            <div :class="`status-flag status-${flagColor}`">{{ siteStatusData.status }}</div>
+            <p class="as-of">As of {{ localTime }}</p>
+          </div>
+          <div class="center-container">
+            <h4>What this means</h4>
+            <p>{{ explanation }}</p>
+          </div>
         </div>
       </template>
     </div>
@@ -78,3 +78,24 @@ onUnmounted(() => siteStatus.stopPolling())
     </div>
   </div>
 </template>
+
+<style scoped>
+.site-status-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.site-status-block .as-of {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+}
+
+.site-status-block h4 {
+  margin-bottom: 0.25rem;
+}
+
+.site-status-block p {
+  margin: 0;
+}
+</style>

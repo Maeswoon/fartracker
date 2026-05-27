@@ -261,16 +261,18 @@ onUnmounted(() => {
           </select>
         </div>
         <p v-if="teams.length === 0">No teams are presently out for recovery.</p>
-        <table v-else>
-          <thead>
-            <tr><th>Teams out for recovery</th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="team in teams" :key="team.team_identifier">
-              <td>{{ team.name }}</td>
-            </tr>
-          </tbody>
-        </table>
+        <div v-else class="table-wrapper">
+          <table>
+            <thead>
+              <tr><th>Teams out for recovery</th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="team in teams" :key="team.team_identifier">
+                <td>{{ team.name }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </template>
     </div>
     <div ref="mapContainer" class="recovery-map" />
@@ -294,6 +296,22 @@ onUnmounted(() => {
 .recovery-map {
   flex: 1;
   min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .recovery-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .recovery-teams {
+    flex: 1 1 auto;
+    max-height: 40vh;
+  }
+
+  .recovery-map {
+    min-height: 50vh;
+  }
 }
 
 .team-filter {

@@ -1,6 +1,11 @@
 @import "tailwindcss";
 
+*, *::before, *::after { box-sizing: border-box; }
+
 :root {
+  --breakpoint-phone: 600px;
+  --breakpoint-tablet: 900px;
+
   /* Palette */
   --color-bg:              #454545;
   --color-text:            #f0f0f0;
@@ -30,6 +35,7 @@ html, body, #app {
   min-height: 100vh;
   width: 100%;
   margin: 0;
+  overflow-x: hidden;
 }
 
 a {
@@ -127,9 +133,18 @@ tbody tr:hover {
   align-items: flex-start;
 }
 
+@media (max-width: 900px) {
+  .dashboard-container {
+    flex-direction: column;
+    padding: 12px;
+    gap: 12px;
+  }
+}
+
 .table-wrapper {
   overflow-x: auto;
   width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .center-container {
@@ -137,7 +152,13 @@ tbody tr:hover {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  max-width: 25vw;
+  max-width: 480px;
+}
+
+@media (max-width: 600px) {
+  .center-container {
+    max-width: 100%;
+  }
 }
 
 .status-flag {
@@ -164,8 +185,16 @@ tbody tr:hover {
   border-radius: 8px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
   padding: 20px;
-  width: 300px;
+  width: 100%;
+  max-width: 300px;
   flex-shrink: 0;
+}
+
+@media (max-width: 600px) {
+  .form-card {
+    max-width: 100%;
+    padding: 16px;
+  }
 }
 
 .form-card label {

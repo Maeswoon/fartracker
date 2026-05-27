@@ -36,4 +36,10 @@ onMounted(() => auth.restoreSession())
   max-width: 100%;
   overflow-y: auto;
 }
+
+@media (max-width: 600px) {
+  .content {
+    padding: 0.75rem 1rem;
+  }
+}
 </style>

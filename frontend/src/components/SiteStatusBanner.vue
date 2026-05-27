@@ -39,4 +39,11 @@ onUnmounted(() => store.stopPolling())
 .banner-yellow { background-color: #ffc107; color: #333; }
 .banner-red    { background-color: #dc3545; }
 .banner-error  { background-color: #555; }
+
+@media (max-width: 600px) {
+  .site-banner {
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+  }
+}
 </style>

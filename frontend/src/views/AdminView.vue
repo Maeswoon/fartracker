@@ -372,13 +372,20 @@ async function submitTeamForm() {
 .dashboard-container { flex-wrap: wrap; }
 
 .form-card--wide {
-  width: 640px;
+  width: 100%;
+  max-width: 640px;
 }
 
 .team-form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 0 16px;
+}
+
+@media (max-width: 600px) {
+  .team-form-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .team-form-grid .field-full {
