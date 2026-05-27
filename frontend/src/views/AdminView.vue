@@ -58,6 +58,7 @@ const pieceTeam = ref('')
 const pieceObjectName = ref('')
 const pieceLat = ref<number>(0)
 const pieceLon = ref<number>(0)
+const pieceAlsoTrajectory = ref(false)
 const pieceSuccess = ref(false)
 const pieceError = ref<string | null>(null)
 
@@ -70,6 +71,9 @@ async function submitRecoveryPiece() {
   }
   try {
     await postRecoveryPiece(pieceTeam.value, pieceObjectName.value, pieceLat.value, pieceLon.value)
+    if (pieceAlsoTrajectory.value) {
+      await postRecoveryTrajectory(pieceTeam.value, pieceLat.value, pieceLon.value)
+    }
     pieceSuccess.value = true
     pieceObjectName.value = ''
     pieceLat.value = 0
@@ -259,6 +263,10 @@ async function submitTeamForm() {
         <input v-model.number="pieceLat" type="number" step="any" required />
         <label>Longitude</label>
         <input v-model.number="pieceLon" type="number" step="any" required />
+        <label class="checkbox-label">
+          <input v-model="pieceAlsoTrajectory" type="checkbox" />
+          Also publish to team trajectory
+        </label>
         <button type="submit">Submit</button>
       </form>
     </div>
@@ -369,7 +377,74 @@ async function submitTeamForm() {
 <style scoped>
 .success { color: green; }
 .error { color: red; }
-.dashboard-container { flex-wrap: wrap; }
+.dashboard-container {
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  justify-content: flex-start;
+}
+
+.dashboard-container .form-card {
+  padding: 12px 14px;
+}
+
+.dashboard-container .form-card h3 {
+  margin: 0 0 8px;
+  font-size: 1.25rem;
+  padding: 4px 8px;
+}
+
+.dashboard-container .form-card label {
+  margin-bottom: 2px;
+}
+
+.dashboard-container .form-card input,
+.dashboard-container .form-card select,
+.dashboard-container .form-card textarea {
+  margin-bottom: 8px;
+  padding: 6px 8px;
+}
+
+.dashboard-container .form-card label.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 16px;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  border: 2px solid var(--color-text-on-light);
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background-color: var(--color-accent-red);
+  border-color: var(--color-accent-red);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 11px;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
 
 .form-card--wide {
   width: 100%;
