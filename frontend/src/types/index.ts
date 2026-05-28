@@ -51,11 +51,24 @@ export interface SiteStatusResponse {
   timestamp: string
 }
 
+export interface RecoveryTrajectory {
+  team_identifier: string
+  name: string
+  coords: { lon: number; lat: number; timestamp: string }[]
+}
+
+export interface AllRecoveryResponse {
+  pieces: RecoveryPiece[]
+  trajectories: RecoveryTrajectory[]
+}
+
 export interface RecoveryPiece {
   id: number
   object_name: string
   lat: number
   lon: number
+  team_name?: string
+  team_identifier?: string
 }
 
 export interface RecoveryTrajectory {

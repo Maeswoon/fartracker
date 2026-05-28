@@ -124,8 +124,8 @@ class RecoveryPiece(models.Model):
     name = models.CharField(max_length=30)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
-    lon = models.DecimalField(max_digits=8, decimal_places=3)
-    lat = models.DecimalField(max_digits=8, decimal_places=3)
+    lon = models.DecimalField(max_digits=10, decimal_places=6)
+    lat = models.DecimalField(max_digits=10, decimal_places=6)
 
     def __str__(self):
         return self.name

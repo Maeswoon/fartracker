@@ -4,13 +4,15 @@ import type { Feature, FeatureCollection } from 'geojson'
 import mapboxgl from 'mapbox-gl'
 import * as togeojson from '@mapbox/togeojson'
 import { getMapboxToken } from '@/config'
-import { getRecovery, getTeamsAbbreviated, getTeamRecovery, getTeam } from '@/api'
-import type { Team, RecoveryPiece } from '@/types'
+import { getRecovery, getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
+import type { Team, RecoveryPiece, RecoveryTrajectory } from '@/types'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 const teams = ref<Team[]>([])
 const allTeams = ref<Team[]>([])
 const teamsWithPieces = ref<Set<string>>(new Set())
+const allPieces = ref<RecoveryPiece[]>([])
+const trajectories = ref<RecoveryTrajectory[]>([])
 const loadingTeams = ref(true)
 const teamsError = ref<string | null>(null)
 const selectedTeamFilter = ref<string>('')
@@ -42,40 +44,41 @@ function midpoint(geometry: any): number[] {
 
 async function fetchTeams() {
   try {
-    ;[teams.value, allTeams.value] = await Promise.all([getRecovery(), getTeamsAbbreviated()])
+    const [recoveryTeams, allTeamsList, recoveryData] = await Promise.all([
+      getRecovery(),
+      getTeamsAbbreviated(),
+      getAllRecoveryPieces().catch(() => ({ pieces: [], trajectories: [] })),
+    ])
+    teams.value = recoveryTeams
+    allTeams.value = allTeamsList
+    allPieces.value = recoveryData.pieces
+    teamsWithPieces.value = new Set(recoveryData.pieces.map((p: any) => p.team_identifier))
+    trajectories.value = recoveryData.trajectories
     teamsError.value = null
   } catch {
     teamsError.value = 'Failed to load recovery teams'
   } finally {
     loadingTeams.value = false
   }
-  await Promise.all([updateRecoveryPieces(), updateTrajectories()])
+  await updateRecoveryPieces()
+  await updateTrajectories()
 }
 
-function visibleTeams() {
-  return selectedTeamFilter.value
-    ? teams.value.filter(t => t.team_identifier === selectedTeamFilter.value)
-    : teams.value
-}
-
-async function updateTrajectories() {
+function updateTrajectories() {
   const trajSource = map?.getSource('trajectories') as mapboxgl.GeoJSONSource | undefined
   const dashSource = map?.getSource('trajectory-dashes') as mapboxgl.GeoJSONSource | undefined
   if (!trajSource || !dashSource) return
 
-  const details = await Promise.all(
-    visibleTeams().map(t => getTeam(t.team_identifier).catch(() => null))
-  )
+  const filtered = selectedTeamFilter.value
+    ? trajectories.value.filter(t => t.team_identifier === selectedTeamFilter.value)
+    : trajectories.value
 
   const trajectoryFeatures: Feature[] = []
   const dashedFeatures: Feature[] = []
 
-  for (const team of details) {
-    if (!team) continue
-    const coords: { lon: number; lat: number }[] = (team as any).recovery_coordinates?.coords ?? []
-    if (!coords.length) continue
-
-    const path = coords.map(c => [Number(c.lon), Number(c.lat)] as [number, number])
+  for (const team of filtered) {
+    if (!team.coords.length) continue
+    const path = team.coords.map(c => [Number(c.lon), Number(c.lat)] as [number, number])
     trajectoryFeatures.push({
       type: 'Feature',
       geometry: { type: 'LineString', coordinates: path },
@@ -94,28 +97,20 @@ async function updateTrajectories() {
   dashSource.setData({ type: 'FeatureCollection', features: dashedFeatures })
 }
 
-async function updateRecoveryPieces() {
+function updateRecoveryPieces() {
   const source = map?.getSource('recovery-pieces') as mapboxgl.GeoJSONSource | undefined
   if (!source) return
 
-  const allPiecesUnfiltered = (await Promise.all(
-    allTeams.value.map(t => getTeamRecovery(t.team_identifier).then(pieces =>
-      pieces.map(p => ({ ...p, teamName: t.name, teamId: t.team_identifier }))
-    ).catch(() => []))
-  )).flat()
-
-  teamsWithPieces.value = new Set(allPiecesUnfiltered.map((p: any) => p.teamId))
-
-  const allPieces = selectedTeamFilter.value
-    ? allPiecesUnfiltered.filter((p: any) => p.teamId === selectedTeamFilter.value)
-    : allPiecesUnfiltered
+  const filteredPieces = selectedTeamFilter.value
+    ? allPieces.value.filter((p: any) => p.team_identifier === selectedTeamFilter.value)
+    : allPieces.value
 
   source.setData({
     type: 'FeatureCollection',
-    features: allPieces.map((p: RecoveryPiece & { teamName: string }) => ({
+    features: filteredPieces.map((p: any) => ({
       type: 'Feature' as const,
       geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] },
-      properties: { name: p.object_name, teamName: p.teamName },
+      properties: { name: p.object_name, teamName: p.team_name },
     })),
   })
 }

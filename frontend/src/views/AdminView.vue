@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getTeamsAbbreviated, getFrequencies, getTeam, postTeam, patchTeam, postSiteStatus, postTeamStatus, postRecoveryPiece, postRecoveryTrajectory, patchTeamFrequencies } from '@/api'
-import type { Team, GpsFrequencies } from '@/types'
+import { getTeamsAbbreviated, getFrequencies, getTeam, postTeam, patchTeam, postSiteStatus, postTeamStatus, postRecoveryPiece, postRecoveryTrajectory, patchTeamFrequencies, getTeamRecovery, deleteRecoveryPiece } from '@/api'
+import type { Team, GpsFrequencies, RecoveryPiece } from '@/types'
+import CoordinateInput from '@/components/CoordinateInput.vue'
 
 const teamOptions = ref<Team[]>([])
 
@@ -58,7 +59,7 @@ const pieceTeam = ref('')
 const pieceObjectName = ref('')
 const pieceLat = ref<number>(0)
 const pieceLon = ref<number>(0)
-const pieceAlsoTrajectory = ref(false)
+const pieceAlsoTrajectory = ref(true)
 const pieceSuccess = ref(false)
 const pieceError = ref<string | null>(null)
 
@@ -78,6 +79,9 @@ async function submitRecoveryPiece() {
     pieceObjectName.value = ''
     pieceLat.value = 0
     pieceLon.value = 0
+    if (deletePieceTeam.value === pieceTeam.value) {
+      loadRecoveryPiecesForDelete()
+    }
   } catch {
     pieceError.value = 'Failed to add recovery piece.'
   }
@@ -142,6 +146,35 @@ async function submitTrajectory() {
     trajLon.value = 0
   } catch {
     trajError.value = 'Failed to add trajectory.'
+  }
+}
+
+// Delete recovery piece form
+const deletePieceTeam = ref('')
+const deletePiecePieces = ref<RecoveryPiece[]>([])
+const deletePieceSuccess = ref(false)
+const deletePieceError = ref<string | null>(null)
+
+async function loadRecoveryPiecesForDelete() {
+  deletePiecePieces.value = []
+  deletePieceError.value = null
+  if (!deletePieceTeam.value) return
+  try {
+    deletePiecePieces.value = await getTeamRecovery(deletePieceTeam.value)
+  } catch {
+    deletePieceError.value = 'Failed to load recovery pieces.'
+  }
+}
+
+async function handleDeletePiece(pieceId: number) {
+  deletePieceSuccess.value = false
+  deletePieceError.value = null
+  try {
+    await deleteRecoveryPiece(deletePieceTeam.value, pieceId)
+    deletePiecePieces.value = deletePiecePieces.value.filter(p => p.id !== pieceId)
+    deletePieceSuccess.value = true
+  } catch {
+    deletePieceError.value = 'Failed to delete piece.'
   }
 }
 
@@ -225,6 +258,64 @@ async function submitTeamForm() {
     </div>
 
     <div class="form-card">
+      <h3>Add Recovery Trajectory</h3>
+      <p v-if="trajSuccess" class="success">Trajectory added!</p>
+      <p v-if="trajError" class="error">{{ trajError }}</p>
+      <form @submit.prevent="submitTrajectory">
+        <label>Team</label>
+        <select v-model="trajTeam" required>
+          <option value="">Select team:</option>
+          <option v-for="t in teamOptions" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
+        </select>
+        <CoordinateInput v-model="trajLat" axis="lat" />
+        <CoordinateInput v-model="trajLon" axis="lon" />
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+    <div class="form-card">
+      <h3>Add Recovery Piece</h3>
+      <p v-if="pieceSuccess" class="success">Recovery piece added!</p>
+      <p v-if="pieceError" class="error">{{ pieceError }}</p>
+      <form @submit.prevent="submitRecoveryPiece">
+        <label>Team</label>
+        <select v-model="pieceTeam" required>
+          <option value="">Select team:</option>
+          <option v-for="t in teamOptions" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
+        </select>
+        <label>Object Name</label>
+        <input v-model="pieceObjectName" type="text" required />
+        <CoordinateInput v-model="pieceLat" axis="lat" />
+        <CoordinateInput v-model="pieceLon" axis="lon" />
+        <label class="checkbox-label">
+          <input v-model="pieceAlsoTrajectory" type="checkbox" />
+          Also publish to team trajectory
+        </label>
+        <button type="submit">Submit</button>
+      </form>
+    </div>
+
+    <div class="form-card">
+      <h3>Delete Recovery Piece</h3>
+      <p v-if="deletePieceSuccess" class="success">Piece deleted.</p>
+      <p v-if="deletePieceError" class="error">{{ deletePieceError }}</p>
+      <form @submit.prevent>
+        <label>Team</label>
+        <select v-model="deletePieceTeam" required @change="loadRecoveryPiecesForDelete">
+          <option value="">Select team:</option>
+          <option v-for="t in teamOptions" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
+        </select>
+      </form>
+      <div v-if="deletePiecePieces.length" class="piece-list">
+        <div v-for="piece in deletePiecePieces" :key="piece.id" class="piece-row">
+          <span class="muted">{{ piece.object_name }} ({{ piece.lat }}, {{ piece.lon }})</span>
+          <button class="btn-delete" @click="handleDeletePiece(piece.id)">Delete</button>
+        </div>
+      </div>
+      <p v-else-if="deletePieceTeam && !deletePieceError" class="muted">No recovery pieces for this team.</p>
+    </div>
+
+    <div class="form-card">
       <h3>Set Team Status</h3>
       <p v-if="teamStatusSuccess" class="success">Status posted!</p>
       <p v-if="teamStatusError" class="error">{{ teamStatusError }}</p>
@@ -248,44 +339,24 @@ async function submitTeamForm() {
     </div>
 
     <div class="form-card">
-      <h3>Add Recovery Piece</h3>
-      <p v-if="pieceSuccess" class="success">Recovery piece added!</p>
-      <p v-if="pieceError" class="error">{{ pieceError }}</p>
-      <form @submit.prevent="submitRecoveryPiece">
+      <h3>Set Team Frequencies</h3>
+      <p v-if="freqSuccess" class="success">Frequencies updated!</p>
+      <p v-if="freqError" class="error">{{ freqError }}</p>
+      <form @submit.prevent="submitFrequencies">
         <label>Team</label>
-        <select v-model="pieceTeam" required>
+        <select v-model="freqTeam" required @change="loadFrequencies">
           <option value="">Select team:</option>
           <option v-for="t in teamOptions" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
         </select>
-        <label>Object Name</label>
-        <input v-model="pieceObjectName" type="text" required />
-        <label>Latitude</label>
-        <input v-model.number="pieceLat" type="number" step="any" required />
-        <label>Longitude</label>
-        <input v-model.number="pieceLon" type="number" step="any" required />
-        <label class="checkbox-label">
-          <input v-model="pieceAlsoTrajectory" type="checkbox" />
-          Also publish to team trajectory
-        </label>
-        <button type="submit">Submit</button>
-      </form>
-    </div>
-
-    <div class="form-card">
-      <h3>Add Recovery Trajectory</h3>
-      <p v-if="trajSuccess" class="success">Trajectory added!</p>
-      <p v-if="trajError" class="error">{{ trajError }}</p>
-      <form @submit.prevent="submitTrajectory">
-        <label>Team</label>
-        <select v-model="trajTeam" required>
-          <option value="">Select team:</option>
-          <option v-for="t in teamOptions" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
-        </select>
-        <label>Latitude</label>
-        <input v-model.number="trajLat" type="number" step="any" required />
-        <label>Longitude</label>
-        <input v-model.number="trajLon" type="number" step="any" required />
-        <button type="submit">Submit</button>
+        <template v-if="freqTeam">
+          <label>Avionics</label>
+          <input v-model="freqFields['avionics']" type="text" placeholder="e.g. 433.5 MHz" />
+          <label>GSE</label>
+          <input v-model="freqFields['gse']" type="text" placeholder="e.g. 915.0 MHz" />
+          <label>Team Comms</label>
+          <input v-model="freqFields['team_comms']" type="text" placeholder="e.g. 462.5625 MHz" />
+          <button type="submit">Save</button>
+        </template>
       </form>
     </div>
 
@@ -349,28 +420,6 @@ async function submitTeamForm() {
       </form>
     </div>
 
-    <div class="form-card">
-      <h3>Set Team Frequencies</h3>
-      <p v-if="freqSuccess" class="success">Frequencies updated!</p>
-      <p v-if="freqError" class="error">{{ freqError }}</p>
-      <form @submit.prevent="submitFrequencies">
-        <label>Team</label>
-        <select v-model="freqTeam" required @change="loadFrequencies">
-          <option value="">Select team:</option>
-          <option v-for="t in teamOptions" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
-        </select>
-        <template v-if="freqTeam">
-          <label>Avionics</label>
-          <input v-model="freqFields['avionics']" type="text" placeholder="e.g. 433.5 MHz" />
-          <label>GSE</label>
-          <input v-model="freqFields['gse']" type="text" placeholder="e.g. 915.0 MHz" />
-          <label>Team Comms</label>
-          <input v-model="freqFields['team_comms']" type="text" placeholder="e.g. 462.5625 MHz" />
-          <button type="submit">Save</button>
-        </template>
-      </form>
-    </div>
-
   </div>
 </template>
 
@@ -378,6 +427,8 @@ async function submitTeamForm() {
 .success { color: green; }
 .error { color: red; }
 .dashboard-container {
+  display: flex;
+  flex-direction: row;
   flex-wrap: wrap;
   gap: 10px;
   padding: 10px;
@@ -386,6 +437,10 @@ async function submitTeamForm() {
 
 .dashboard-container .form-card {
   padding: 12px 14px;
+}
+
+.dashboard-container .form-card:not(.form-card--wide) {
+  max-width: 260px;
 }
 
 .dashboard-container .form-card h3 {
@@ -487,5 +542,41 @@ async function submitTeamForm() {
   background-color: var(--color-accent-red);
   color: white;
   border-color: var(--color-accent-red);
+}
+
+.piece-list {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.piece-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background-color: #f5f5f5;
+  padding: 8px 10px;
+  border-radius: 4px;
+}
+
+.btn-delete {
+  background-color: #dc3545;
+  color: white;
+  border: none;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.btn-delete:hover {
+  background-color: #c82333;
+}
+
+.muted {
+  color: var(--color-text-on-light);
 }
 </style>

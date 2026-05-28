@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.db.models import OuterRef, Subquery
 from django.http import HttpResponse, JsonResponse
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -25,6 +25,8 @@ Team CRUD
 
 
 class TeamAbbreviatedView(APIView):
+    throttle_classes = []
+
     def get(self, request) -> Response:
         teams = Team.objects.all()
         serializer = TeamAbbreviatedSerializer(teams, many=True)
@@ -34,6 +36,11 @@ class TeamAbbreviatedView(APIView):
 class TeamDetailedView(APIView):
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+
+    def get_throttles(self):
+        if self.request.method == 'GET':
+            return []
+        return super().get_throttles()
 
     # Returns status, team info, recovery info, rail info, list of statuses
     def get(self, request, team_id: str) -> Response:
@@ -56,6 +63,11 @@ class TeamView(APIView):
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
 
+    def get_throttles(self):
+        if self.request.method == 'GET':
+            return []
+        return super().get_throttles()
+
     def get(self, request) -> Response:
         teams = Team.objects.all()
         serializer = TeamSerializer(teams, many=True)
@@ -73,6 +85,11 @@ class TeamView(APIView):
 class TeamStatusView(APIView):
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+
+    def get_throttles(self):
+        if self.request.method == 'GET':
+            return []
+        return super().get_throttles()
 
     def get(self, request, team_id: str):
         team = Team.objects.filter(team_identifier=team_id).first()
@@ -112,6 +129,8 @@ Recovery
 
 
 class RecoveringTeamsAbbreviatedView(APIView):
+    throttle_classes = []
+
     def get(self, request) -> Response:
         # Subquery to get the latest book status for each author
         latest_team_status_subquery = TeamStatus.objects.filter(
@@ -125,6 +144,35 @@ class RecoveringTeamsAbbreviatedView(APIView):
         serializer = TeamAbbreviatedSerializer(teams, many=True)
         return Response(serializer.data)
 
+class AllRecoveryPiecesView(APIView):
+    throttle_classes = []
+
+    def get(self, request) -> Response:
+        pieces = RecoveryPiece.objects.select_related('team').all()
+        pieces_data = []
+        for p in pieces:
+            item = RecoveryPieceSerializer(p).data
+            item['team_name'] = p.team.name
+            item['team_identifier'] = p.team.team_identifier
+            pieces_data.append(item)
+
+        teams_with_coords = Team.objects.exclude(recovery_coordinates__coords__isnull=True)
+        trajectories = []
+        for t in teams_with_coords:
+            coords = (t.recovery_coordinates or {}).get('coords', [])
+            if coords:
+                trajectories.append({
+                    'team_identifier': t.team_identifier,
+                    'name': t.name,
+                    'coords': coords,
+                })
+
+        return Response({
+            'pieces': pieces_data,
+            'trajectories': trajectories,
+        })
+
+
 """
 RecoveryPiece CRUD
 """
@@ -132,6 +180,11 @@ RecoveryPiece CRUD
 class RecoveryPieceView(APIView):
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+
+    def get_throttles(self):
+        if self.request.method == 'GET':
+            return []
+        return super().get_throttles()
 
     def get(self, request, team_id) -> Response:
         team = Team.objects.filter(team_identifier=team_id).first()
@@ -143,25 +196,24 @@ class RecoveryPieceView(APIView):
         team = Team.objects.filter(team_identifier=team_id).first()
         if not team:
             return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
-        name = request.data.get('object_name')
-        if not name:
-            return Response({'error': 'object_name is required'}, status=drf_status.HTTP_400_BAD_REQUEST)
-        data = {'name': str(name)[:30], 'team': team.pk, 'lat': request.data.get('lat'), 'lon': request.data.get('lon')}
+        data = {**request.data, 'team': team.pk}
         serializer = RecoveryPieceSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-    def delete(self, request, team_id) -> Response:
-        team = Team.objects.filter(team_identifier=team_id).first()
-        if not team:
-            return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
-        object_name = request.data.get('object_name')
-        if not object_name:
-            return Response({'error': 'object_name is required'}, status=drf_status.HTTP_400_BAD_REQUEST)
-        deleted_count, _ = RecoveryPiece.objects.filter(name=object_name, team=team).delete()
-        return Response({"deleted": deleted_count})
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
+def delete_recovery_piece(request, team_id: str, piece_id: int):
+    team = Team.objects.filter(team_identifier=team_id).first()
+    if not team:
+        return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+    deleted_count, _ = RecoveryPiece.objects.filter(id=piece_id, team=team).delete()
+    if not deleted_count:
+        return Response({'error': 'Piece not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+    return Response({"deleted": deleted_count})
 
 
 # For when a team is telling you their position
@@ -197,6 +249,11 @@ class SiteStatusView(APIView):
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
 
+    def get_throttles(self):
+        if self.request.method == 'GET':
+            return []
+        return super().get_throttles()
+
     def get(self, request) -> Response:
         latest_status = SiteStatus.objects.order_by('-timestamp').first()
         resp = SiteStatusSerializer(latest_status)
@@ -230,6 +287,7 @@ def update_team_frequencies(request, team_id: str):
 
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([])
 def get_frequency_information(request) -> JsonResponse:
     teams = Team.objects.all().values('name', 'team_identifier', 'gps_frequencies')
     teams_json = list(teams)
@@ -239,6 +297,7 @@ def get_frequency_information(request) -> JsonResponse:
 # User Info
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
+@throttle_classes([])
 def current_user(request):
     user = request.user
     return Response({

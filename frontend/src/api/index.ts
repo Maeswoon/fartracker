@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteStatusResponse, RecoveryPiece } from '@/types'
+import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteStatusResponse, RecoveryPiece, AllRecoveryResponse } from '@/types'
 
 const BASE_URL = import.meta.env.DEV
   ? 'http://localhost:8000/api'
@@ -44,6 +44,7 @@ export const getTeamsAbbreviated = () => api.get<Team[]>('/team_tracking/teams/a
 export const getTeam = (id: string) => api.get<TeamDetailed>(`/team_tracking/teams/${id}`).then(r => r.data)
 export const getTeamStatuses = (id: string) => api.get<TeamStatus[]>(`/team_tracking/teams/${id}/status`).then(r => r.data)
 export const getTeamRecovery = (id: string) => api.get<RecoveryPiece[]>(`/team_tracking/teams/${id}/recovery`).then(r => r.data)
+export const getAllRecoveryPieces = () => api.get<AllRecoveryResponse>('/team_tracking/recovery-pieces').then(r => r.data)
 export const getSiteStatus = () => api.get<SiteStatusResponse>('/team_tracking/site_status').then(r => r.data)
 export const getFrequencies = () => api.get<Frequency[]>('/team_tracking/frequencies').then(r => r.data)
 export const patchTeamFrequencies = (id: string, frequencies: GpsFrequencies) =>
@@ -61,5 +62,7 @@ export const postTeamStatus = (teamId: string, status: string, padName?: string)
   api.post(`/team_tracking/teams/${teamId}/status`, { status, ...(padName ? { pad_name: padName } : {}) }).then(r => r.data)
 export const postRecoveryPiece = (team: string, object_name: string, lat: number, lon: number) =>
   api.post(`/team_tracking/teams/${team}/recovery`, { object_name, lat, lon }).then(r => r.data)
+export const deleteRecoveryPiece = (team: string, pieceId: number) =>
+  api.delete(`/team_tracking/teams/${team}/recovery/${pieceId}`).then(r => r.data)
 export const postRecoveryTrajectory = (team: string, lat: number, lon: number) =>
   api.post(`/team_tracking/teams/${team}/recovery/trajectory`, { lat, lon }).then(r => r.data)

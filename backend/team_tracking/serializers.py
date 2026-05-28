@@ -122,7 +122,10 @@ class TeamWriteSerializer(serializers.ModelSerializer):
 
 
 class RecoveryPieceSerializer(serializers.ModelSerializer):
+    object_name = serializers.CharField(source='name', max_length=30)
+
     class Meta:
         model = RecoveryPiece
-        fields = ['name', 'timestamp', 'team', 'lat', 'lon']
+        fields = ['id', 'object_name', 'timestamp', 'team', 'lat', 'lon']
+        read_only_fields = ['id', 'timestamp']
 
