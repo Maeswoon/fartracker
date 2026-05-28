@@ -121,7 +121,7 @@ Recovery
 
 
 class RecoveryPiece(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=30)
     team = models.ForeignKey(Team, on_delete=models.CASCADE)
     timestamp = models.DateTimeField(auto_now_add=True)
     lon = models.DecimalField(max_digits=8, decimal_places=3)

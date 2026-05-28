@@ -69,12 +69,6 @@ class TeamView(APIView):
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
 
-def get_team_statuses(request, team_id: str) -> JsonResponse:
-    team = Team.objects.filter(team_identifier=team_id).first()
-    team_statuses = TeamStatus.objects.filter(team=team)
-    team_status_json = list(team_statuses.values())
-    return JsonResponse(team_status_json, safe=False)
-
 
 class TeamStatusView(APIView):
     def get_permissions(self):
@@ -98,7 +92,7 @@ class TeamStatusView(APIView):
             if latest_team_status.status == TeamStatus.TeamStatusChoice.AT_RAIL:
                 # Update the RailStatus for the given Launch Rail to "Free"
                 pass
-            if request.data['status'] == TeamStatus.TeamStatusChoice.AT_RAIL:
+            if request.data.get('status') == TeamStatus.TeamStatusChoice.AT_RAIL:
                 if latest_team_status.status is not TeamStatus.TeamStatusChoice.IN_SALVO:
                     # If they did not launch in their most recent launch attempt, increment their launch attempt counter
                     pass
@@ -147,14 +141,26 @@ class RecoveryPieceView(APIView):
 
     def post(self, request, team_id) -> Response:
         team = Team.objects.filter(team_identifier=team_id).first()
-        piece = RecoveryPiece.objects.create(name=request.data['object_name'], team=team,
-                                             lon=float(request.data['lon']), lat=float(request.data['lat']))
-        serializer = RecoveryPieceSerializer(piece)
-        return Response(serializer.data)
+        if not team:
+            return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+        name = request.data.get('object_name')
+        if not name:
+            return Response({'error': 'object_name is required'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        data = {'name': str(name)[:30], 'team': team.pk, 'lat': request.data.get('lat'), 'lon': request.data.get('lon')}
+        serializer = RecoveryPieceSerializer(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, team_id) -> Response:
         team = Team.objects.filter(team_identifier=team_id).first()
-        deleted_count, details = RecoveryPiece.objects.delete(name=request.data['object_name'], team=team)
+        if not team:
+            return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+        object_name = request.data.get('object_name')
+        if not object_name:
+            return Response({'error': 'object_name is required'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        deleted_count, _ = RecoveryPiece.objects.filter(name=object_name, team=team).delete()
         return Response({"deleted": deleted_count})
 
 
@@ -163,10 +169,21 @@ class RecoveryPieceView(APIView):
 @permission_classes([IsAuthenticated])
 def update_team_recovery_trajectory(request, team_id: str):
     team = Team.objects.filter(team_identifier=team_id).first()
+    if not team:
+        return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+    lon = request.data.get('lon')
+    lat = request.data.get('lat')
+    if lon is None or lat is None:
+        return Response({'error': 'lon and lat are required'}, status=drf_status.HTTP_400_BAD_REQUEST)
+    try:
+        lon = float(lon)
+        lat = float(lat)
+    except (ValueError, TypeError):
+        return Response({'error': 'lon and lat must be numbers'}, status=drf_status.HTTP_400_BAD_REQUEST)
     timestamp = datetime.now().isoformat()
     if not isinstance(team.recovery_coordinates, dict):
         team.recovery_coordinates = {}
-    team.recovery_coordinates.setdefault('coords', []).append({"lon": request.data['lon'], "lat": request.data['lat'], "timestamp": timestamp})
+    team.recovery_coordinates.setdefault('coords', []).append({"lon": lon, "lat": lat, "timestamp": timestamp})
     team.save()
     serializer = TeamDetailedSerializer(team)
     return Response(serializer.data)
@@ -193,13 +210,20 @@ class SiteStatusView(APIView):
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
 
+EXPECTED_FREQ_KEYS = {'avionics', 'gse', 'team_comms'}
+
 @api_view(['PATCH'])
 @permission_classes([IsAuthenticated])
 def update_team_frequencies(request, team_id: str):
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
-    team.gps_frequencies = request.data
+    sanitized = {}
+    for key in EXPECTED_FREQ_KEYS:
+        val = request.data.get(key)
+        if val is not None:
+            sanitized[key] = str(val)[:100]
+    team.gps_frequencies = sanitized
     team.save()
     return Response(team.gps_frequencies)
 
@@ -222,4 +246,12 @@ def current_user(request):
         'username': user.username,
         'email': user.email,
     })
+
+
+@api_view(['POST'])
+def logout_view(request):
+    response = Response({'detail': 'Logged out'})
+    response.delete_cookie('access_token', path='/api/', samesite='Lax')
+    response.delete_cookie('refresh_token', path='/api/', samesite='Lax')
+    return response
 

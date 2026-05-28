@@ -68,7 +68,6 @@ class TeamStatusSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(f"Team with identifier '{team_id}' does not exist.")
 
     def create(self, validated_data):
-        print("Creating with:", validated_data)
         team = self.context['team']
         status = TeamStatus.objects.create(team=team, **validated_data)
         return status

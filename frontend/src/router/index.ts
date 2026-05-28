@@ -5,6 +5,7 @@ import FrequenciesView from '@/views/FrequenciesView.vue'
 import RecoveryView from '@/views/RecoveryView.vue'
 import LoginView from '@/views/LoginView.vue'
 import AdminView from '@/views/AdminView.vue'
+import { getCurrentUser } from '@/api'
 
 const routes = [
   { path: '/', component: HomeView },
@@ -20,8 +21,12 @@ export const router = createRouter({
   routes,
 })
 
-router.beforeEach((to) => {
-  if (to.meta.requiresAuth && !localStorage.getItem('access')) {
-    return '/login'
+router.beforeEach(async (to) => {
+  if (to.meta.requiresAuth) {
+    try {
+      await getCurrentUser()
+    } catch {
+      return '/login'
+    }
   }
 })
