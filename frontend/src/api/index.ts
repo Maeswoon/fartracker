@@ -44,12 +44,11 @@ export const getTeamsAbbreviated = () => api.get<Team[]>('/team_tracking/teams/a
 export const getTeam = (id: string) => api.get<TeamDetailed>(`/team_tracking/teams/${id}`).then(r => r.data)
 export const getTeamStatuses = (id: string) => api.get<TeamStatus[]>(`/team_tracking/teams/${id}/status`).then(r => r.data)
 export const getTeamRecovery = (id: string) => api.get<RecoveryPiece[]>(`/team_tracking/teams/${id}/recovery`).then(r => r.data)
-export const getAllRecoveryPieces = () => api.get<AllRecoveryResponse>('/team_tracking/recovery-pieces').then(r => r.data)
+export const getAllRecoveryPieces = () => api.get<AllRecoveryResponse>('/team_tracking/recovery').then(r => r.data)
 export const getSiteStatus = () => api.get<SiteStatusResponse>('/team_tracking/site_status').then(r => r.data)
 export const getFrequencies = () => api.get<Frequency[]>('/team_tracking/frequencies').then(r => r.data)
 export const patchTeamFrequencies = (id: string, frequencies: GpsFrequencies) =>
   api.patch(`/team_tracking/teams/${id}/frequencies`, frequencies).then(r => r.data)
-export const getRecovery = () => api.get<Team[]>('/team_tracking/recovery').then(r => r.data)
 
 export const postLogin = (username: string, password: string) =>
   api.post('/token/', { username, password })

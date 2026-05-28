@@ -4,21 +4,33 @@ import type { Feature, FeatureCollection } from 'geojson'
 import mapboxgl from 'mapbox-gl'
 import * as togeojson from '@mapbox/togeojson'
 import { getMapboxToken } from '@/config'
-import { getRecovery, getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
+import { getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
 import type { Team, RecoveryPiece, RecoveryTrajectory } from '@/types'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
-const teams = ref<Team[]>([])
 const allTeams = ref<Team[]>([])
-const teamsWithPieces = ref<Set<string>>(new Set())
 const allPieces = ref<RecoveryPiece[]>([])
 const trajectories = ref<RecoveryTrajectory[]>([])
 const loadingTeams = ref(true)
 const teamsError = ref<string | null>(null)
 const selectedTeamFilter = ref<string>('')
 
+const recoveryTeamIds = computed(() => {
+  const ids = new Set<string>()
+  for (const p of allPieces.value) ids.add((p as any).team_identifier)
+  for (const t of trajectories.value) ids.add(t.team_identifier)
+  return ids
+})
+
+const teams = computed(() =>
+  allTeams.value.filter(t => t.status === 'IR')
+)
+
 const filterableTeams = computed(() => {
-  const ids = new Set([...teams.value.map(t => t.team_identifier), ...teamsWithPieces.value])
+  const ids = new Set([
+    ...teams.value.map(t => t.team_identifier),
+    ...recoveryTeamIds.value,
+  ])
   return allTeams.value.filter(t => ids.has(t.team_identifier))
 })
 
@@ -44,15 +56,12 @@ function midpoint(geometry: any): number[] {
 
 async function fetchTeams() {
   try {
-    const [recoveryTeams, allTeamsList, recoveryData] = await Promise.all([
-      getRecovery(),
+    const [allTeamsList, recoveryData] = await Promise.all([
       getTeamsAbbreviated(),
       getAllRecoveryPieces().catch(() => ({ pieces: [], trajectories: [] })),
     ])
-    teams.value = recoveryTeams
     allTeams.value = allTeamsList
     allPieces.value = recoveryData.pieces
-    teamsWithPieces.value = new Set(recoveryData.pieces.map((p: any) => p.team_identifier))
     trajectories.value = recoveryData.trajectories
     teamsError.value = null
   } catch {
@@ -69,9 +78,10 @@ function updateTrajectories() {
   const dashSource = map?.getSource('trajectory-dashes') as mapboxgl.GeoJSONSource | undefined
   if (!trajSource || !dashSource) return
 
+  const recoveringIds = new Set(teams.value.map(t => t.team_identifier))
   const filtered = selectedTeamFilter.value
-    ? trajectories.value.filter(t => t.team_identifier === selectedTeamFilter.value)
-    : trajectories.value
+    ? trajectories.value.filter(t => t.team_identifier === selectedTeamFilter.value && recoveringIds.has(t.team_identifier))
+    : trajectories.value.filter(t => recoveringIds.has(t.team_identifier))
 
   const trajectoryFeatures: Feature[] = []
   const dashedFeatures: Feature[] = []
@@ -117,7 +127,7 @@ function updateRecoveryPieces() {
 
 onMounted(async () => {
   await fetchTeams()
-  pollInterval = setInterval(fetchTeams, 60_000)
+  pollInterval = setInterval(fetchTeams, 15_000)
 
   mapboxgl.accessToken = getMapboxToken()
 

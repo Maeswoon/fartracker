@@ -2,7 +2,6 @@
 from typing import Dict, Optional, List
 from datetime import datetime
 
-from django.db.models import OuterRef, Subquery
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -122,27 +121,6 @@ class TeamStatusView(APIView):
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-
-"""
-Recovery
-"""
-
-
-class RecoveringTeamsAbbreviatedView(APIView):
-    throttle_classes = []
-
-    def get(self, request) -> Response:
-        # Subquery to get the latest book status for each author
-        latest_team_status_subquery = TeamStatus.objects.filter(
-            team=OuterRef('pk')
-        ).order_by('-timestamp').values('status')[:1]
-
-        teams = Team.objects.annotate(
-            latest_status=Subquery(latest_team_status_subquery)
-        ).filter(latest_status=TeamStatus.TeamStatusChoice.IN_RECOVERY)
-
-        serializer = TeamAbbreviatedSerializer(teams, many=True)
-        return Response(serializer.data)
 
 class AllRecoveryPiecesView(APIView):
     throttle_classes = []
