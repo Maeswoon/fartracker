@@ -3,7 +3,7 @@ import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteSta
 
 const BASE_URL = import.meta.env.DEV
   ? 'http://localhost:8000/api'
-  : 'http://tracker.faroutlaunch.org/api'
+  : 'https://tracker.faroutlaunch.org/api'
 
 const api = axios.create({
   baseURL: BASE_URL,
