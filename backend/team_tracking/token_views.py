@@ -38,11 +38,10 @@ class CookieTokenObtainPairView(TokenObtainPairView):
 
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        refresh = request.COOKIES.get('refresh_token')
-        if refresh and 'refresh' not in request.data:
-            request._full_data = {'refresh': refresh}
+        refresh_token = request.COOKIES.get('refresh_token')
+        if refresh_token:
+            request._full_data = {'refresh': refresh_token}
         response = super().post(request, *args, **kwargs)
-        data = response.data
-        if 'access' in data:
-            _set_jwt_cookies(response, access=data['access'])
+        if 'access' in response.data:
+            _set_jwt_cookies(response, access=response.data['access'])
         return response
