@@ -39,7 +39,7 @@ function logout() {
         <RouterLink to="/frequencies">Frequencies</RouterLink>
         <RouterLink to="/admin">Admin</RouterLink>
       </template>
-      <button v-if="auth.user" @click="logout">Logout</button>
+      <button v-if="auth.user" @click="logout">{{ auth.user.username }} // Logout</button>
       <RouterLink v-else to="/login">Login</RouterLink>
     </div>
     <Transition name="drawer">
@@ -50,7 +50,7 @@ function logout() {
           <RouterLink to="/frequencies" @click="close">Frequencies</RouterLink>
           <RouterLink to="/admin" @click="close">Admin</RouterLink>
         </template>
-        <button v-if="auth.user" @click="logout">Logout</button>
+        <button v-if="auth.user" @click="logout">{{ auth.user.username }} // Logout</button>
         <RouterLink v-else to="/login" @click="close">Login</RouterLink>
       </div>
     </Transition>

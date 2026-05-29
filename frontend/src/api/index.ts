@@ -51,7 +51,7 @@ export const patchTeamFrequencies = (id: string, frequencies: GpsFrequencies) =>
   api.patch(`/team_tracking/teams/${id}/frequencies`, frequencies).then(r => r.data)
 
 export const postLogin = (username: string, password: string) =>
-  api.post('/token/', { username, password })
+  api.post('/token/', { username, password }).then(r => r.data)
 export const postLogout = () => axios.post(`${BASE_URL}/logout/`, {}, { withCredentials: true })
 export const getCurrentUser = () => api.get('/team_tracking/current-user').then(r => r.data)
 
