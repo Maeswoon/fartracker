@@ -63,5 +63,5 @@ export const postRecoveryPiece = (team: string, object_name: string, lat: number
   api.post(`/team_tracking/teams/${team}/recovery`, { object_name, lat, lon }).then(r => r.data)
 export const deleteRecoveryPiece = (team: string, pieceId: number) =>
   api.delete(`/team_tracking/teams/${team}/recovery/${pieceId}`).then(r => r.data)
-export const postRecoveryTrajectory = (team: string, lat: number, lon: number) =>
-  api.post(`/team_tracking/teams/${team}/recovery/trajectory`, { lat, lon }).then(r => r.data)
+export const postRecoveryPath = (team: string, lat: number, lon: number) =>
+  api.post(`/team_tracking/teams/${team}/recovery/path`, { lat, lon }).then(r => r.data)

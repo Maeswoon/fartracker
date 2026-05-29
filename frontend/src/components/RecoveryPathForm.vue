@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { postRecoveryTrajectory } from '@/api'
+import { postRecoveryPath } from '@/api'
 import { useForm } from '@/api/useApi'
 import type { Team } from '@/types'
 import TeamSelect from '@/components/TeamSelect.vue'
@@ -20,17 +20,17 @@ function handleSubmit() {
     return
   }
   submit(async () => {
-    await postRecoveryTrajectory(team.value, lat.value, lon.value)
+    await postRecoveryPath(team.value, lat.value, lon.value)
     lat.value = 0
     lon.value = 0
-  }, 'Failed to add trajectory.')
+  }, 'Failed to add path.')
 }
 </script>
 
 <template>
   <div class="form-card">
-    <h3>Add Recovery Trajectory</h3>
-    <p v-if="success" class="success">Trajectory added!</p>
+    <h3>Add Recovery Path</h3>
+    <p v-if="success" class="success">Path added!</p>
     <p v-if="error" class="error">{{ error }}</p>
     <form @submit.prevent="handleSubmit">
       <label>Team</label>

@@ -51,7 +51,7 @@ export interface SiteStatusResponse {
   timestamp: string
 }
 
-export interface RecoveryTrajectory {
+export interface RecoveryPath {
   team_identifier: string
   name: string
   coords: { lon: number; lat: number; timestamp: string }[]
@@ -59,7 +59,7 @@ export interface RecoveryTrajectory {
 
 export interface AllRecoveryResponse {
   pieces: RecoveryPiece[]
-  trajectories: RecoveryTrajectory[]
+  paths: RecoveryPath[]
 }
 
 export interface RecoveryPiece {
@@ -71,7 +71,7 @@ export interface RecoveryPiece {
   team_identifier?: string
 }
 
-export interface RecoveryTrajectoryPoint {
+export interface RecoveryPathPoint {
   id: number
   lat: number
   lon: number

@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import { getTeamsAbbreviated } from '@/api'
 import type { Team } from '@/types'
 import SiteStatusForm from '@/components/SiteStatusForm.vue'
-import RecoveryTrajectoryForm from '@/components/RecoveryTrajectoryForm.vue'
+import RecoveryPathForm from '@/components/RecoveryPathForm.vue'
 import RecoveryPieceForm from '@/components/RecoveryPieceForm.vue'
 import DeleteRecoveryPieceForm from '@/components/DeleteRecoveryPieceForm.vue'
 import TeamStatusForm from '@/components/TeamStatusForm.vue'
@@ -40,7 +40,7 @@ function onPieceSubmitted(_teamId: string) {
   <h1>Admin</h1>
   <div class="dashboard-container">
     <SiteStatusForm />
-    <RecoveryTrajectoryForm :teams="teamOptions" />
+    <RecoveryPathForm :teams="teamOptions" />
     <RecoveryPieceForm :teams="teamOptions" @submitted="onPieceSubmitted" />
     <DeleteRecoveryPieceForm ref="deleteFormRef" :teams="teamOptions" />
     <TeamStatusForm :teams="teamOptions" />

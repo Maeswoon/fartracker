@@ -5,12 +5,12 @@ import mapboxgl from 'mapbox-gl'
 import * as togeojson from '@mapbox/togeojson'
 import { getMapboxToken } from '@/config'
 import { getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
-import type { Team, RecoveryPiece, RecoveryTrajectory } from '@/types'
+import type { Team, RecoveryPiece, RecoveryPath } from '@/types'
 import 'mapbox-gl/dist/mapbox-gl.css'
 
 const allTeams = ref<Team[]>([])
 const allPieces = ref<RecoveryPiece[]>([])
-const trajectories = ref<RecoveryTrajectory[]>([])
+const paths = ref<RecoveryPath[]>([])
 const loadingTeams = ref(true)
 const teamsError = ref<string | null>(null)
 const selectedTeamFilter = ref<string>('')
@@ -18,7 +18,7 @@ const selectedTeamFilter = ref<string>('')
 const recoveryTeamIds = computed(() => {
   const ids = new Set<string>()
   for (const p of allPieces.value) ids.add((p as any).team_identifier)
-  for (const t of trajectories.value) ids.add(t.team_identifier)
+  for (const t of paths.value) ids.add(t.team_identifier)
   return ids
 })
 
@@ -34,7 +34,7 @@ const filterableTeams = computed(() => {
   return allTeams.value.filter(t => ids.has(t.team_identifier))
 })
 
-watch(selectedTeamFilter, () => Promise.all([updateRecoveryPieces(), updateTrajectories()]))
+watch(selectedTeamFilter, () => Promise.all([updateRecoveryPieces(), updatePaths()]))
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: mapboxgl.Map | null = null
@@ -58,11 +58,11 @@ async function fetchTeams() {
   try {
     const [allTeamsList, recoveryData] = await Promise.all([
       getTeamsAbbreviated(),
-      getAllRecoveryPieces().catch(() => ({ pieces: [], trajectories: [] })),
+      getAllRecoveryPieces().catch(() => ({ pieces: [], paths: [] })),
     ])
     allTeams.value = allTeamsList
     allPieces.value = recoveryData.pieces
-    trajectories.value = recoveryData.trajectories
+    paths.value = recoveryData.paths
     teamsError.value = null
   } catch {
     teamsError.value = 'Failed to load recovery teams'
@@ -70,26 +70,26 @@ async function fetchTeams() {
     loadingTeams.value = false
   }
   await updateRecoveryPieces()
-  await updateTrajectories()
+  await updatePaths()
 }
 
-function updateTrajectories() {
-  const trajSource = map?.getSource('trajectories') as mapboxgl.GeoJSONSource | undefined
-  const dashSource = map?.getSource('trajectory-dashes') as mapboxgl.GeoJSONSource | undefined
-  if (!trajSource || !dashSource) return
+function updatePaths() {
+  const pathSource = map?.getSource('paths') as mapboxgl.GeoJSONSource | undefined
+  const dashSource = map?.getSource('path-dashes') as mapboxgl.GeoJSONSource | undefined
+  if (!pathSource || !dashSource) return
 
   const recoveringIds = new Set(teams.value.map(t => t.team_identifier))
   const filtered = selectedTeamFilter.value
-    ? trajectories.value.filter(t => t.team_identifier === selectedTeamFilter.value && recoveringIds.has(t.team_identifier))
-    : trajectories.value.filter(t => recoveringIds.has(t.team_identifier))
+    ? paths.value.filter(t => t.team_identifier === selectedTeamFilter.value && recoveringIds.has(t.team_identifier))
+    : paths.value.filter(t => recoveringIds.has(t.team_identifier))
 
-  const trajectoryFeatures: Feature[] = []
+  const pathFeatures: Feature[] = []
   const dashedFeatures: Feature[] = []
 
   for (const team of filtered) {
     if (!team.coords.length) continue
     const path = team.coords.map(c => [Number(c.lon), Number(c.lat)] as [number, number])
-    trajectoryFeatures.push({
+    pathFeatures.push({
       type: 'Feature',
       geometry: { type: 'LineString', coordinates: path },
       properties: { name: team.name },
@@ -103,7 +103,7 @@ function updateTrajectories() {
     })
   }
 
-  trajSource.setData({ type: 'FeatureCollection', features: trajectoryFeatures })
+  pathSource.setData({ type: 'FeatureCollection', features: pathFeatures })
   dashSource.setData({ type: 'FeatureCollection', features: dashedFeatures })
 }
 
@@ -186,8 +186,8 @@ onMounted(async () => {
       .then(() => {
         const empty: FeatureCollection = { type: 'FeatureCollection', features: [] }
         map!.addSource('recovery-pieces', { type: 'geojson', data: empty })
-        map!.addSource('trajectories', { type: 'geojson', data: empty })
-        map!.addSource('trajectory-dashes', { type: 'geojson', data: empty })
+        map!.addSource('paths', { type: 'geojson', data: empty })
+        map!.addSource('path-dashes', { type: 'geojson', data: empty })
 
         map!.addLayer({
           id: 'recovery-pieces-circles',
@@ -210,21 +210,21 @@ onMounted(async () => {
           paint: { 'text-color': '#FFD700', 'text-halo-color': '#000', 'text-halo-width': 1 },
         })
         map!.addLayer({
-          id: 'trajectory-lines',
+          id: 'path-lines',
           type: 'line',
-          source: 'trajectories',
+          source: 'paths',
           paint: { 'line-color': '#00BFFF', 'line-width': 2 },
         })
         map!.addLayer({
-          id: 'trajectory-last-point',
+          id: 'path-last-point',
           type: 'circle',
-          source: 'trajectory-dashes',
+          source: 'path-dashes',
           paint: { 'circle-radius': 7, 'circle-color': '#00FF00', 'circle-stroke-color': '#000', 'circle-stroke-width': 1 },
         })
         map!.addLayer({
-          id: 'trajectory-last-point-label',
+          id: 'path-last-point-label',
           type: 'symbol',
-          source: 'trajectory-dashes',
+          source: 'path-dashes',
           layout: {
             'text-field': ['get', 'label'],
             'text-size': 12,
@@ -236,7 +236,7 @@ onMounted(async () => {
           paint: { 'text-color': '#00FF00', 'text-halo-color': '#000', 'text-halo-width': 1 },
         })
       })
-      .then(() => Promise.all([updateRecoveryPieces(), updateTrajectories()]))
+      .then(() => Promise.all([updateRecoveryPieces(), updatePaths()]))
       .catch(err => console.error('Error loading KML:', err))
   })
 

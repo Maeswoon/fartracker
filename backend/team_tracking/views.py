@@ -135,11 +135,11 @@ class AllRecoveryPiecesView(APIView):
             pieces_data.append(item)
 
         teams_with_coords = Team.objects.exclude(recovery_coordinates__coords__isnull=True)
-        trajectories = []
+        paths = []
         for t in teams_with_coords:
             coords = (t.recovery_coordinates or {}).get('coords', [])
             if coords:
-                trajectories.append({
+                paths.append({
                     'team_identifier': t.team_identifier,
                     'name': t.name,
                     'coords': coords,
@@ -147,7 +147,7 @@ class AllRecoveryPiecesView(APIView):
 
         return Response({
             'pieces': pieces_data,
-            'trajectories': trajectories,
+            'paths': paths,
         })
 
 
@@ -197,7 +197,7 @@ def delete_recovery_piece(request, team_id: str, piece_id: int):
 # For when a team is telling you their position
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
-def update_team_recovery_trajectory(request, team_id: str):
+def update_team_recovery_path(request, team_id: str):
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)

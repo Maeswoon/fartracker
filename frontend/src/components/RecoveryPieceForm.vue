@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { postRecoveryPiece, postRecoveryTrajectory } from '@/api'
+import { postRecoveryPiece, postRecoveryPath } from '@/api'
 import { useForm } from '@/api/useApi'
 import type { Team } from '@/types'
 import TeamSelect from '@/components/TeamSelect.vue'
@@ -16,7 +16,7 @@ const team = ref('')
 const objectName = ref('')
 const lat = ref<number>(0)
 const lon = ref<number>(0)
-const alsoTrajectory = ref(true)
+const alsoPath = ref(true)
 
 function handleSubmit() {
   if (!team.value || !objectName.value.trim()) {
@@ -25,8 +25,8 @@ function handleSubmit() {
   }
   submit(async () => {
     await postRecoveryPiece(team.value, objectName.value, lat.value, lon.value)
-    if (alsoTrajectory.value) {
-      await postRecoveryTrajectory(team.value, lat.value, lon.value)
+    if (alsoPath.value) {
+      await postRecoveryPath(team.value, lat.value, lon.value)
     }
     emit('submitted', team.value)
     objectName.value = ''
@@ -49,8 +49,8 @@ function handleSubmit() {
       <CoordinateInput v-model="lat" axis="lat" />
       <CoordinateInput v-model="lon" axis="lon" />
       <label class="checkbox-label">
-        <input v-model="alsoTrajectory" type="checkbox" />
-        Also publish to team trajectory
+        <input v-model="alsoPath" type="checkbox" />
+        Also publish to team path
       </label>
       <button type="submit">Submit</button>
     </form>
