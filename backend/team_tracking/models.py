@@ -1,21 +1,17 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-
 """
 Bunker information
 """
-
 
 class Bunker(models.Model):
     name = models.TextField()
     location = models.JSONField(default=list)
 
-
 """
 Rail information
 """
-
 
 class LaunchRail(models.Model):  # Named "Pad" in the LC model
     class RailType(models.TextChoices):
@@ -39,7 +35,6 @@ class LaunchRail(models.Model):  # Named "Pad" in the LC model
     def __str__(self):
         return self.name
 
-
 class RailStatus(models.Model):  # Named "PadStatus" in the LC model
     class RailStatusChoice(models.TextChoices):
         IN_USE = 'IU', _('In Use')
@@ -52,11 +47,9 @@ class RailStatus(models.Model):  # Named "PadStatus" in the LC model
     )
     launch_rail = models.ForeignKey(LaunchRail, on_delete=models.CASCADE)
 
-
 """
 Team information
 """
-
 
 class Team(models.Model):
     class EngineType(models.TextChoices):
@@ -97,7 +90,6 @@ class Team(models.Model):
     def __str__(self):
         return self.name
 
-
 class TeamStatus(models.Model):
     class TeamStatusChoice(models.TextChoices):
         ABSENT = 'AS', _('Absent')
@@ -114,11 +106,9 @@ class TeamStatus(models.Model):
     )
     pad_name = models.CharField(max_length=100, blank=True, null=True)
 
-
 """
 Recovery
 """
-
 
 class RecoveryPiece(models.Model):
     name = models.CharField(max_length=30)
@@ -129,7 +119,6 @@ class RecoveryPiece(models.Model):
 
     def __str__(self):
         return self.name
-
 
 class SiteStatus(models.Model):
     class SiteStatusChoice(models.TextChoices):

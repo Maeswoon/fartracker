@@ -1,5 +1,10 @@
 from django.conf import settings
+from rest_framework.permissions import BasePermission
 from rest_framework_simplejwt.authentication import JWTAuthentication
+
+class IsAdmin(BasePermission):
+    def has_permission(self, request, view):
+        return bool(request.auth and request.auth.get('is_admin'))
 
 class JWTCookieAuthentication(JWTAuthentication):
     def authenticate(self, request):

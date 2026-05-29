@@ -35,22 +35,22 @@ function logout() {
     <div class="links links-desktop">
       <RouterLink to="/">Home</RouterLink>
       <RouterLink to="/recovery">Recovery</RouterLink>
-      <template v-if="auth.user">
+      <template v-if="auth.user?.is_admin">
         <RouterLink to="/frequencies">Frequencies</RouterLink>
         <RouterLink to="/admin">Admin</RouterLink>
-        <button @click="logout">Logout</button>
       </template>
+      <button v-if="auth.user" @click="logout">Logout</button>
       <RouterLink v-else to="/login">Login</RouterLink>
     </div>
     <Transition name="drawer">
       <div v-show="open" class="links links-mobile">
         <RouterLink to="/" @click="close">Home</RouterLink>
         <RouterLink to="/recovery" @click="close">Recovery</RouterLink>
-        <template v-if="auth.user">
+        <template v-if="auth.user?.is_admin">
           <RouterLink to="/frequencies" @click="close">Frequencies</RouterLink>
           <RouterLink to="/admin" @click="close">Admin</RouterLink>
-          <button @click="logout">Logout</button>
         </template>
+        <button v-if="auth.user" @click="logout">Logout</button>
         <RouterLink v-else to="/login" @click="close">Login</RouterLink>
       </div>
     </Transition>

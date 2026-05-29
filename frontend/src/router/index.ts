@@ -3,11 +3,11 @@ import { getCurrentUser } from '@/api'
 
 const routes = [
   { path: '/', component: () => import('@/views/HomeView.vue') },
-  { path: '/frequencies', component: () => import('@/views/FrequenciesView.vue'), meta: { requiresAuth: true } },
+  { path: '/frequencies', component: () => import('@/views/FrequenciesView.vue'), meta: { requiresAdmin: true } },
   { path: '/teams/:teamId', component: () => import('@/views/TeamView.vue') },
   { path: '/recovery', component: () => import('@/views/RecoveryView.vue') },
   { path: '/login', component: () => import('@/views/LoginView.vue') },
-  { path: '/admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAuth: true } },
+  { path: '/admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAdmin: true } },
 ]
 
 export const router = createRouter({
@@ -16,9 +16,10 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (to.meta.requiresAuth) {
+  if (to.meta.requiresAdmin) {
     try {
-      await getCurrentUser()
+      const user = await getCurrentUser()
+      if (!user.is_admin) return '/'
     } catch {
       return '/login'
     }

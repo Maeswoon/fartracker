@@ -1,8 +1,16 @@
 from django.conf import settings
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 JWT_SETTINGS = getattr(settings, 'SIMPLE_JWT', {})
 
+class PermissionTokenObtainPairSerializer(TokenObtainPairSerializer):
+    @classmethod
+    def get_token(cls, user):
+        token = super().get_token(user)
+        token['is_admin'] = user.is_superuser
+        token['is_team_member'] = user.groups.filter(name='team_member').exists()
+        return token
 
 def _set_jwt_cookies(response, access=None, refresh=None):
     cookie_kwargs = {
@@ -24,8 +32,9 @@ def _set_jwt_cookies(response, access=None, refresh=None):
         response.set_cookie(refresh_cookie, refresh, max_age=max_age, **cookie_kwargs)
     return response
 
-
 class CookieTokenObtainPairView(TokenObtainPairView):
+    serializer_class = PermissionTokenObtainPairSerializer
+
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
         data = response.data
@@ -34,7 +43,6 @@ class CookieTokenObtainPairView(TokenObtainPairView):
             access=data.get('access'),
             refresh=data.get('refresh'),
         )
-
 
 class CookieTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):

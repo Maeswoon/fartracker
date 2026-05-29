@@ -9,6 +9,8 @@ export interface User {
   id: number
   username: string
   email: string
+  is_admin: boolean
+  is_team_member: boolean
 }
 
 export interface Team {

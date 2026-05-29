@@ -4,7 +4,8 @@ from datetime import datetime
 
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from .auth import IsAdmin
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import rest_framework.status as drf_status
@@ -13,15 +14,12 @@ from .serializers import TeamSerializer, SiteStatusSerializer, TeamStatusSeriali
     TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer
 from .models import Team, TeamStatus, RecoveryPiece, SiteStatus
 
-
 def index(request):
     return HttpResponse("Hello, world. You're at the polls index.")
-
 
 """
 Team CRUD
 """
-
 
 class TeamAbbreviatedView(APIView):
     throttle_classes = []
@@ -31,10 +29,9 @@ class TeamAbbreviatedView(APIView):
         serializer = TeamAbbreviatedSerializer(teams, many=True)
         return Response(serializer.data)
 
-
 class TeamDetailedView(APIView):
     def get_permissions(self):
-        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -57,10 +54,9 @@ class TeamDetailedView(APIView):
             return Response(serializer.data)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-
 class TeamView(APIView):
     def get_permissions(self):
-        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -80,10 +76,9 @@ class TeamView(APIView):
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
 
-
 class TeamStatusView(APIView):
     def get_permissions(self):
-        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -121,7 +116,6 @@ class TeamStatusView(APIView):
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-
 class AllRecoveryPiecesView(APIView):
     throttle_classes = []
 
@@ -150,14 +144,13 @@ class AllRecoveryPiecesView(APIView):
             'paths': paths,
         })
 
-
 """
 RecoveryPiece CRUD
 """
 
 class RecoveryPieceView(APIView):
     def get_permissions(self):
-        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -181,9 +174,8 @@ class RecoveryPieceView(APIView):
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-
 @api_view(['DELETE'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin])
 def delete_recovery_piece(request, team_id: str, piece_id: int):
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
@@ -193,10 +185,9 @@ def delete_recovery_piece(request, team_id: str, piece_id: int):
         return Response({'error': 'Piece not found'}, status=drf_status.HTTP_404_NOT_FOUND)
     return Response({"deleted": deleted_count})
 
-
 # For when a team is telling you their position
 @api_view(['POST'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin])
 def update_team_recovery_path(request, team_id: str):
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
@@ -222,10 +213,9 @@ def update_team_recovery_path(request, team_id: str):
 def get_pads(request):
     ...
 
-
 class SiteStatusView(APIView):
     def get_permissions(self):
-        return [AllowAny()] if self.request.method == 'GET' else [IsAuthenticated()]
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -244,11 +234,10 @@ class SiteStatusView(APIView):
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-
 EXPECTED_FREQ_KEYS = {'avionics', 'gse', 'team_comms'}
 
 @api_view(['PATCH'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin])
 def update_team_frequencies(request, team_id: str):
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
@@ -262,15 +251,13 @@ def update_team_frequencies(request, team_id: str):
     team.save()
     return Response(team.gps_frequencies)
 
-
 @api_view(['GET'])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAdmin])
 @throttle_classes([])
 def get_frequency_information(request) -> JsonResponse:
     teams = Team.objects.all().values('name', 'team_identifier', 'gps_frequencies')
     teams_json = list(teams)
     return JsonResponse(teams_json, safe=False)
-
 
 # User Info
 @api_view(['GET'])
@@ -278,12 +265,14 @@ def get_frequency_information(request) -> JsonResponse:
 @throttle_classes([])
 def current_user(request):
     user = request.user
+    token = request.auth
     return Response({
         'id': user.id,
         'username': user.username,
         'email': user.email,
+        'is_admin': bool(token and token.get('is_admin')),
+        'is_team_member': bool(token and token.get('is_team_member')),
     })
-
 
 @api_view(['POST'])
 def logout_view(request):

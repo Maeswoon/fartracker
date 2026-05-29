@@ -53,7 +53,6 @@ function midpoint(geometry: any): number[] {
   return coords[Math.floor(coords.length / 2)]
 }
 
-
 async function fetchTeams() {
   try {
     const [allTeamsList, recoveryData] = await Promise.all([

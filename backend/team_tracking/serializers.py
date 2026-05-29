@@ -2,12 +2,10 @@ from rest_framework import serializers
 
 from .models import Team, LaunchRail, Bunker, SiteStatus, TeamStatus, RecoveryPiece
 
-
 class BunkerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bunker
         fields = ['name', 'location']
-
 
 class LaunchRailSerializer(serializers.ModelSerializer):
     rail_type_display = serializers.CharField(source='get_rail_type_display', read_only=True)
@@ -15,7 +13,6 @@ class LaunchRailSerializer(serializers.ModelSerializer):
     class Meta:
         model = LaunchRail
         fields = ['name', 'rail_type_display', 'location']
-
 
 class VerboseChoiceField(serializers.ChoiceField):
     def to_internal_value(self, data):
@@ -29,14 +26,12 @@ class VerboseChoiceField(serializers.ChoiceField):
         # Optionally return verbose name in response
         return self.choices.get(value, value)
 
-
 class SiteStatusSerializer(serializers.ModelSerializer):
     status = VerboseChoiceField(SiteStatus.SiteStatusChoice.choices)
 
     class Meta:
         model = SiteStatus
         fields = ['status', 'timestamp']
-
 
 class TeamAbbreviatedSerializer(serializers.ModelSerializer):
     status = serializers.SerializerMethodField()
@@ -47,7 +42,6 @@ class TeamAbbreviatedSerializer(serializers.ModelSerializer):
     def get_status(self, team):
         status = TeamStatus.objects.filter(team=team).order_by('-timestamp').first()
         return status.status if status else None
-
 
 class TeamStatusSerializer(serializers.ModelSerializer):
     team_name = serializers.SerializerMethodField()
@@ -72,7 +66,6 @@ class TeamStatusSerializer(serializers.ModelSerializer):
         status = TeamStatus.objects.create(team=team, **validated_data)
         return status
 
-
 class RecoveringTeamsSerializer(serializers.Serializer):
     team_name = serializers.CharField()
 
@@ -81,7 +74,6 @@ class RecoveringTeamsSerializer(serializers.Serializer):
             'team_name': instance.name
 
         }
-
 
 class TeamDetailedSerializer(serializers.ModelSerializer):
     engine_type_display = serializers.CharField(source='get_engine_type_display', read_only=True)
@@ -92,7 +84,6 @@ class TeamDetailedSerializer(serializers.ModelSerializer):
         model = Team
         fields = ['name', 'university', 'team_identifier', 'category', 'engine_type', 'fuel_oxidizer', 'gps_frequencies',
                   'engine_type_display', 'recovery_coordinates', 'launch_rail', 'bunker', 'target_altitude']
-
 
 class TeamSerializer(serializers.ModelSerializer):
     engine_type_display = serializers.CharField(source='get_engine_type_display', read_only=True)
@@ -119,7 +110,6 @@ class TeamWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ['name', 'university', 'team_identifier', 'category', 'engine_type', 'fuel_oxidizer', 'target_altitude']
-
 
 class RecoveryPieceSerializer(serializers.ModelSerializer):
     object_name = serializers.CharField(source='name', max_length=30)
