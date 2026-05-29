@@ -5,14 +5,14 @@ from datetime import datetime
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .auth import IsAdmin
+from .auth import IsAdmin, IsTeamMember
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import rest_framework.status as drf_status
 
 from .serializers import TeamSerializer, SiteStatusSerializer, TeamStatusSerializer, TeamAbbreviatedSerializer, \
-    TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer
-from .models import Team, TeamStatus, RecoveryPiece, SiteStatus
+    TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer, TrajectorySerializer
+from .models import Team, TeamStatus, RecoveryPiece, SiteStatus, Trajectory
 
 def index(request):
     return HttpResponse("Hello, world. You're at the polls index.")
@@ -280,4 +280,69 @@ def logout_view(request):
     response.delete_cookie('access_token', path='/api/', samesite='Lax')
     response.delete_cookie('refresh_token', path='/api/', samesite='Lax')
     return response
+
+class TrajectoryListView(APIView):
+    permission_classes = [AllowAny]
+    throttle_classes = []
+
+    def get(self, request) -> Response:
+        trajectories = Trajectory.objects.select_related('team').all()
+        serializer = TrajectorySerializer(trajectories, many=True)
+        return Response(serializer.data)
+
+class TrajectoryDetailView(APIView):
+    def get_permissions(self):
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin() | IsTeamMember()]
+
+    def get_throttles(self):
+        if self.request.method == 'GET':
+            return []
+        return super().get_throttles()
+
+    def _get_team(self, team_id):
+        team = Team.objects.filter(team_identifier=team_id).first()
+        if not team:
+            return None
+        return team
+
+    def _validate_points(self, data):
+        pts = data.get('points')
+        if not isinstance(pts, list) or not pts or any(not isinstance(p, list) or len(p) != 3 for p in pts):
+            return None
+        return pts
+
+    def get(self, request, team_id: str) -> Response:
+        trajectory = Trajectory.objects.filter(team__team_identifier=team_id).select_related('team').first()
+        if not trajectory:
+            return Response({'error': 'Trajectory not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+        serializer = TrajectorySerializer(trajectory)
+        return Response(serializer.data)
+
+    def put(self, request, team_id: str) -> Response:
+        team = self._get_team(team_id)
+        if not team:
+            return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+        pts = self._validate_points(request.data)
+        if pts is None:
+            return Response({'error': 'points must be [[lat, lon, alt], ...]'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        if len(pts) > 10000:
+            return Response({'error': 'Trajectory exceeds 10,000 point limit'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        trajectory, _ = Trajectory.objects.update_or_create(team=team, defaults={'points': pts})
+        serializer = TrajectorySerializer(trajectory)
+        return Response(serializer.data)
+
+    def post(self, request, team_id: str) -> Response:
+        team = self._get_team(team_id)
+        if not team:
+            return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+        pts = self._validate_points(request.data)
+        if pts is None:
+            return Response({'error': 'points must be [[lat, lon, alt], ...]'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        trajectory, _ = Trajectory.objects.get_or_create(team=team)
+        if len(trajectory.points) + len(pts) > 10000:
+            return Response({'error': 'Trajectory exceeds 10,000 point limit'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        trajectory.points.extend(pts)
+        trajectory.save()
+        serializer = TrajectorySerializer(trajectory)
+        return Response(serializer.data)
 

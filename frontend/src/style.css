@@ -233,3 +233,43 @@ tbody tr:hover {
 .success { color: green; }
 .error { color: red; }
 .muted { color: var(--color-text-on-light); }
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.checkbox-label input[type="checkbox"] {
+  box-sizing: border-box;
+  width: 22px;
+  height: 22px;
+  margin: 0;
+  padding: 0;
+  background-color: #fff;
+  border: 2px solid var(--color-text-on-light);
+  border-radius: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+  display: inline-grid;
+  place-content: center;
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background-color: var(--color-accent-red);
+  border-color: var(--color-accent-red);
+}
+
+.checkbox-label input[type="checkbox"]:checked::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 11px;
+  border: solid #fff;
+  border-width: 0 2.5px 2.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+}

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Team, LaunchRail, Bunker, SiteStatus, TeamStatus, RecoveryPiece
+from .models import Team, LaunchRail, Bunker, SiteStatus, TeamStatus, RecoveryPiece, Trajectory
 
 class BunkerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -118,4 +118,13 @@ class RecoveryPieceSerializer(serializers.ModelSerializer):
         model = RecoveryPiece
         fields = ['id', 'object_name', 'timestamp', 'team', 'lat', 'lon']
         read_only_fields = ['id', 'timestamp']
+
+class TrajectorySerializer(serializers.ModelSerializer):
+    team_identifier = serializers.CharField(source='team.team_identifier', read_only=True)
+    team_name = serializers.CharField(source='team.name', read_only=True)
+
+    class Meta:
+        model = Trajectory
+        fields = ['id', 'team_identifier', 'team_name', 'points', 'updated_at']
+        read_only_fields = ['id', 'updated_at']
 

@@ -120,6 +120,14 @@ class RecoveryPiece(models.Model):
     def __str__(self):
         return self.name
 
+class Trajectory(models.Model):
+    team = models.OneToOneField(Team, on_delete=models.CASCADE, related_name='trajectory')
+    points = models.JSONField(default=list)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f'Trajectory for {self.team.name}'
+
 class SiteStatus(models.Model):
     class SiteStatusChoice(models.TextChoices):
         GREEN = 'G', _('Green Flag')

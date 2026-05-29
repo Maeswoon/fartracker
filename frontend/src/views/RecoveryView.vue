@@ -14,6 +14,7 @@ const paths = ref<RecoveryPath[]>([])
 const loadingTeams = ref(true)
 const teamsError = ref<string | null>(null)
 const selectedTeamFilter = ref<string>('')
+const showTrajectories = ref(false)
 
 const recoveryTeamIds = computed(() => {
   const ids = new Set<string>()
@@ -239,6 +240,8 @@ onMounted(async () => {
       .catch(err => console.error('Error loading KML:', err))
   })
 
+  watch(showTrajectories, (val) => map?.easeTo({ pitch: val ? 60 : 0 }))
+
   resizeObserver = new ResizeObserver(() => map?.resize())
   resizeObserver.observe(mapContainer.value!)
 })
@@ -264,6 +267,10 @@ onUnmounted(() => {
             <option v-for="t in filterableTeams" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
           </select>
         </div>
+        <label class="checkbox-label">
+          <input v-model="showTrajectories" type="checkbox" />
+          Display flight trajectories
+        </label>
         <p v-if="teams.length === 0">No teams are presently out for recovery.</p>
         <div v-else class="table-wrapper">
           <table>
