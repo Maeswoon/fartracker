@@ -54,7 +54,7 @@ cp -r frontend/dist/* build/frontend
 cd build
 mkdir -p backend
 cp -r ../backend/. backend/
-tar -czvf "$PROD_ZIP" --exclude='backend/.venv' backend frontend
+tar -czvf "$PROD_ZIP" --exclude='backend/.venv' --exclude='backend/staticfiles' backend frontend
 
 scp "$PROD_ZIP" farout-aws:$PROD_HOME/$PROD_ZIP
 

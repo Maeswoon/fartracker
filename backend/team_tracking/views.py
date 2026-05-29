@@ -5,6 +5,7 @@ from datetime import datetime
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.http import HttpResponse, JsonResponse
+from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from .auth import IsAdmin, IsTeamMember, IsAdminOrTeamOwner
@@ -16,22 +17,24 @@ from .serializers import TeamSerializer, SiteStatusSerializer, TeamStatusSeriali
     TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer, TrajectorySerializer
 from .models import Team, TeamStatus, RecoveryPiece, SiteStatus, Trajectory
 
+@extend_schema(auth=[])
 def index(request):
+    """Health check endpoint."""
     return HttpResponse("Hello, world. You're at the polls index.")
 
-"""
-Team CRUD
-"""
-
+@extend_schema(auth=[])
 class TeamAbbreviatedView(APIView):
+    """List all teams with name, identifier, and current status only."""
     throttle_classes = []
 
     def get(self, request) -> Response:
+        """Return abbreviated team list."""
         teams = Team.objects.all()
         serializer = TeamAbbreviatedSerializer(teams, many=True)
         return Response(serializer.data)
 
 class TeamDetailedView(APIView):
+    """Retrieve or update a single team by identifier."""
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
@@ -40,13 +43,15 @@ class TeamDetailedView(APIView):
             return []
         return super().get_throttles()
 
-    # Returns status, team info, recovery info, rail info, list of statuses
     def get(self, request, team_id: str) -> Response:
+        """Return full team details including fuel, bunker, pad, and target altitude."""
         team = Team.objects.filter(team_identifier=team_id).select_related('launch_rail', 'bunker').first()
         serializer = TeamDetailedSerializer(team)
         return Response(serializer.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def patch(self, request, team_id: str) -> Response:
+        """Update team fields. Requires admin."""
         team = Team.objects.filter(team_identifier=team_id).first()
         if not team:
             return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -57,6 +62,7 @@ class TeamDetailedView(APIView):
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
 class TeamView(APIView):
+    """List all teams or create a new team."""
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
@@ -66,19 +72,22 @@ class TeamView(APIView):
         return super().get_throttles()
 
     def get(self, request) -> Response:
+        """Return all teams with status, category, engine type, and pad name."""
         teams = Team.objects.all()
         serializer = TeamSerializer(teams, many=True)
         return Response(serializer.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def post(self, request) -> Response:
+        """Create a new team. Requires admin."""
         serializer = TeamWriteSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
-
 class TeamStatusView(APIView):
+    """Get status history or post a new status for a team."""
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
@@ -88,29 +97,24 @@ class TeamStatusView(APIView):
         return super().get_throttles()
 
     def get(self, request, team_id: str):
+        """Return status history for a team, newest first."""
         team = Team.objects.filter(team_identifier=team_id).first()
         team_statuses = TeamStatus.objects.filter(team=team).order_by('-timestamp')
         serializer = TeamStatusSerializer(team_statuses, many=True, context={'team': team})
         return Response(serializer.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def post(self, request, team_id: str):
-        """
-        :param request: Request which should have team_identifier: str, status: str, rail_name: Optional[str]
-        :param team_id: str as part of path
-        :return: Response
-        """
+        """Post a new status. Requires admin. Body: {"status": "At rail", "pad_name": "Rail 3"}."""
         team = Team.objects.filter(team_identifier=team_id).first()
         latest_team_status = TeamStatus.objects.filter(team=team).order_by('-timestamp').first()
         if latest_team_status is not None:
             if latest_team_status.status == TeamStatus.TeamStatusChoice.AT_RAIL:
-                # Update the RailStatus for the given Launch Rail to "Free"
                 pass
             if request.data.get('status') == TeamStatus.TeamStatusChoice.AT_RAIL:
                 if latest_team_status.status is not TeamStatus.TeamStatusChoice.IN_SALVO:
-                    # If they did not launch in their most recent launch attempt, increment their launch attempt counter
                     pass
                 else:
-                    # Otherwise, they just got on the rail. Update RailStatus to occupied and add Team
                     pass
         serializer = TeamStatusSerializer(data=request.data, context={'team': team})
         if serializer.is_valid():
@@ -118,10 +122,13 @@ class TeamStatusView(APIView):
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(auth=[])
 class AllRecoveryPiecesView(APIView):
+    """Return all recovery pieces and recovery paths."""
     throttle_classes = []
 
     def get(self, request) -> Response:
+        """Return all recovery pieces with team info and recovery path coordinates."""
         pieces = RecoveryPiece.objects.select_related('team').all()
         pieces_data = []
         for p in pieces:
@@ -146,11 +153,8 @@ class AllRecoveryPiecesView(APIView):
             'paths': paths,
         })
 
-"""
-RecoveryPiece CRUD
-"""
-
 class RecoveryPieceView(APIView):
+    """List or add recovery pieces for a team."""
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
@@ -160,12 +164,15 @@ class RecoveryPieceView(APIView):
         return super().get_throttles()
 
     def get(self, request, team_id) -> Response:
+        """Return recovery pieces for a team."""
         team = Team.objects.filter(team_identifier=team_id).first()
         recovery_pieces = RecoveryPiece.objects.filter(team=team)
         serializer = RecoveryPieceSerializer(recovery_pieces, many=True)
         return Response(serializer.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def post(self, request, team_id) -> Response:
+        """Add a recovery piece. Requires admin. Body: {"object_name": "...", "lat": 35.3, "lon": -117.8}."""
         team = Team.objects.filter(team_identifier=team_id).first()
         if not team:
             return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -176,9 +183,11 @@ class RecoveryPieceView(APIView):
             return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(auth=[{'cookieAuth': []}])
 @api_view(['DELETE'])
 @permission_classes([IsAdmin])
 def delete_recovery_piece(request, team_id: str, piece_id: int):
+    """Delete a recovery piece. Requires admin."""
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -187,10 +196,11 @@ def delete_recovery_piece(request, team_id: str, piece_id: int):
         return Response({'error': 'Piece not found'}, status=drf_status.HTTP_404_NOT_FOUND)
     return Response({"deleted": deleted_count})
 
-# For when a team is telling you their position
+@extend_schema(auth=[{'cookieAuth': []}])
 @api_view(['POST'])
 @permission_classes([IsAdmin])
 def update_team_recovery_path(request, team_id: str):
+    """Append a coordinate to a team's recovery path. Requires admin. Body: {"lat": 35.3, "lon": -117.8}."""
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -211,11 +221,12 @@ def update_team_recovery_path(request, team_id: str):
     serializer = TeamDetailedSerializer(team)
     return Response(serializer.data)
 
-# Get the rails and their pad statuses. Which team is on there?
 def get_pads(request):
+    """Return pad statuses (not yet implemented)."""
     ...
 
 class SiteStatusView(APIView):
+    """Get or set the current site flag status (Green/Yellow/Red)."""
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAdmin()]
 
@@ -225,11 +236,14 @@ class SiteStatusView(APIView):
         return super().get_throttles()
 
     def get(self, request) -> Response:
+        """Return the current site status and timestamp."""
         latest_status = SiteStatus.objects.order_by('-timestamp').first()
         resp = SiteStatusSerializer(latest_status)
         return Response(resp.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def post(self, request) -> Response:
+        """Set the site status. Requires admin. Body: {"status": "Green Flag"}."""
         serializer = SiteStatusSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -238,9 +252,11 @@ class SiteStatusView(APIView):
 
 EXPECTED_FREQ_KEYS = {'avionics', 'gse', 'team_comms'}
 
+@extend_schema(auth=[{'cookieAuth': []}])
 @api_view(['PATCH'])
 @permission_classes([IsAdmin])
 def update_team_frequencies(request, team_id: str):
+    """Update a team's GPS frequencies. Requires admin. Body: {"avionics": "433.5 MHz", "gse": "915.0 MHz", "team_comms": "462.5625 MHz"}."""
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -253,19 +269,22 @@ def update_team_frequencies(request, team_id: str):
     team.save()
     return Response(team.gps_frequencies)
 
+@extend_schema(auth=[{'cookieAuth': []}])
 @api_view(['GET'])
 @permission_classes([IsAdmin])
 @throttle_classes([])
 def get_frequency_information(request) -> JsonResponse:
+    """Return GPS frequencies for all teams. Requires admin."""
     teams = Team.objects.all().values('name', 'team_identifier', 'gps_frequencies')
     teams_json = list(teams)
     return JsonResponse(teams_json, safe=False)
 
-# User Info
+@extend_schema(auth=[{'cookieAuth': []}])
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 @throttle_classes([])
 def current_user(request):
+    """Return the authenticated user's info and permission claims."""
     user = request.user
     token = request.auth
     return Response({
@@ -276,8 +295,10 @@ def current_user(request):
         'is_team_member': bool(token and token.get('is_team_member')),
     })
 
+@extend_schema(auth=[])
 @api_view(['POST'])
 def logout_view(request):
+    """Clear authentication cookies."""
     response = Response({'detail': 'Logged out'})
     response.delete_cookie('access_token', path='/api/', samesite='Lax')
     response.delete_cookie('refresh_token', path='/api/', samesite='Lax')
@@ -290,19 +311,28 @@ def _broadcast_trajectory(trajectory):
         {'type': 'trajectory_update', 'data': serializer.data},
     )
 
+@extend_schema(auth=[])
 class TrajectoryListView(APIView):
+    """List all flight trajectories."""
     permission_classes = [AllowAny]
     throttle_classes = []
 
     def get(self, request) -> Response:
+        """Return all trajectories with team info. Points are [lat, lon, altitude_agl_ft]."""
         trajectories = Trajectory.objects.select_related('team').all()
         serializer = TrajectorySerializer(trajectories, many=True)
         return Response(serializer.data)
 
 class TrajectoryDetailView(APIView):
+    """Get, replace, or append to a team's flight trajectory.
+
+    Points are arrays of [latitude, longitude, altitude_agl_feet].
+    PUT replaces the entire trajectory (max 10k points).
+    POST appends points to the existing trajectory (total max 10k).
+    GET is public; PUT and POST require admin or team ownership.
+    """
     def get_permissions(self):
         return [AllowAny()] if self.request.method == 'GET' else [IsAdminOrTeamOwner()]
-
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -322,13 +352,16 @@ class TrajectoryDetailView(APIView):
         return pts
 
     def get(self, request, team_id: str) -> Response:
+        """Return a single team's trajectory."""
         trajectory = Trajectory.objects.filter(team__team_identifier=team_id).select_related('team').first()
         if not trajectory:
             return Response({'error': 'Trajectory not found'}, status=drf_status.HTTP_404_NOT_FOUND)
         serializer = TrajectorySerializer(trajectory)
         return Response(serializer.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def put(self, request, team_id: str) -> Response:
+        """Replace the entire trajectory. Body: {"points": [[lat, lon, alt], ...]}. Max 10k points."""
         team = self._get_team(team_id)
         if not team:
             return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -342,7 +375,9 @@ class TrajectoryDetailView(APIView):
         serializer = TrajectorySerializer(trajectory)
         return Response(serializer.data)
 
+    @extend_schema(auth=[{'cookieAuth': []}])
     def post(self, request, team_id: str) -> Response:
+        """Append points to the trajectory. Body: {"points": [[lat, lon, alt], ...]}. Total max 10k."""
         team = self._get_team(team_id)
         if not team:
             return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
@@ -357,4 +392,3 @@ class TrajectoryDetailView(APIView):
         _broadcast_trajectory(trajectory)
         serializer = TrajectorySerializer(trajectory)
         return Response(serializer.data)
-

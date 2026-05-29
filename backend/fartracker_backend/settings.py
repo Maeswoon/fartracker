@@ -57,6 +57,8 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'channels',
+    'drf_spectacular',
+    'drf_spectacular_sidecar',
 ]
 
 MIDDLEWARE = [
@@ -172,6 +174,7 @@ CORS_ALLOW_HEADERS = [
 
 # Authentication
 REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'team_tracking.auth.JWTCookieAuthentication',
     ),
@@ -183,6 +186,16 @@ REST_FRAMEWORK = {
         'anon': '100/hour',
         'user': '1000/hour',
     },
+}
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'FAR Tracker API',
+    'DESCRIPTION': 'Rocket launch tracking and recovery API. Authenticated endpoints use JWT stored in an HTTP-only cookie (set by POST /api/token/). Include the cookie with requests, or pass the access token via Authorization: Bearer &lt;token&gt;.',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+    'COMPONENT_SPLIT_REQUEST': True,
+    'SWAGGER_UI_DIST': 'SIDECAR',
+    'SWAGGER_UI_FAVICON_HREF': 'SIDECAR',
 }
 
 SIMPLE_JWT = {

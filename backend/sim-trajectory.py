@@ -15,7 +15,6 @@ MAP_CENTER_LAT = 35.34715
 MAP_CENTER_LON = -117.80898
 DEFAULT_BASE = 'http://localhost:8000'
 
-
 def get_token(base, username, password):
     url = f'{base}/api/token/'
     data = json.dumps({'username': username, 'password': password}).encode()
@@ -24,7 +23,6 @@ def get_token(base, username, password):
     resp = opener.open(req)
     return opener
 
-
 def put_trajectory(opener, base, team_id, points):
     url = f'{base}/api/team_tracking/trajectories/{team_id}'
     data = json.dumps({'points': points}).encode()
@@ -32,14 +30,12 @@ def put_trajectory(opener, base, team_id, points):
     resp = opener.open(req)
     return json.loads(resp.read())
 
-
 def post_points(opener, base, team_id, pts):
     url = f'{base}/api/team_tracking/trajectories/{team_id}'
     data = json.dumps({'points': pts}).encode()
     req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'}, method='POST')
     resp = opener.open(req)
     return json.loads(resp.read())
-
 
 def main():
     parser = argparse.ArgumentParser(description='Simulate a launch trajectory')
@@ -75,7 +71,6 @@ def main():
         print(f'  Point {i+1}/100: alt={alt} ft  lat={lat:.5f}  lon={lon:.5f}', end='\r')
         time.sleep(1)
     print('\nDone.')
-
 
 if __name__ == '__main__':
     main()

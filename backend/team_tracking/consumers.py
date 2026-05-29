@@ -1,7 +1,6 @@
 from asgiref.sync import async_to_sync
 from channels.generic.websocket import JsonWebsocketConsumer
 
-
 class TrajectoryConsumer(JsonWebsocketConsumer):
     def connect(self):
         from .models import Trajectory
