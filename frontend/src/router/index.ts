@@ -1,19 +1,13 @@
 import { createWebHistory, createRouter } from 'vue-router'
-import HomeView from '@/views/HomeView.vue'
-import TeamView from '@/views/TeamView.vue'
-import FrequenciesView from '@/views/FrequenciesView.vue'
-import RecoveryView from '@/views/RecoveryView.vue'
-import LoginView from '@/views/LoginView.vue'
-import AdminView from '@/views/AdminView.vue'
 import { getCurrentUser } from '@/api'
 
 const routes = [
-  { path: '/', component: HomeView },
-  { path: '/frequencies', component: FrequenciesView },
-  { path: '/teams/:teamId', component: TeamView },
-  { path: '/recovery', component: RecoveryView },
-  { path: '/login', component: LoginView },
-  { path: '/admin', component: AdminView, meta: { requiresAuth: true } },
+  { path: '/', component: () => import('@/views/HomeView.vue') },
+  { path: '/frequencies', component: () => import('@/views/FrequenciesView.vue'), meta: { requiresAuth: true } },
+  { path: '/teams/:teamId', component: () => import('@/views/TeamView.vue') },
+  { path: '/recovery', component: () => import('@/views/RecoveryView.vue') },
+  { path: '/login', component: () => import('@/views/LoginView.vue') },
+  { path: '/admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAuth: true } },
 ]
 
 export const router = createRouter({

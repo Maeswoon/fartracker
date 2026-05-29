@@ -34,9 +34,9 @@ function logout() {
     </button>
     <div class="links links-desktop">
       <RouterLink to="/">Home</RouterLink>
-      <RouterLink to="/frequencies">Frequencies</RouterLink>
       <RouterLink to="/recovery">Recovery</RouterLink>
       <template v-if="auth.user">
+        <RouterLink to="/frequencies">Frequencies</RouterLink>
         <RouterLink to="/admin">Admin</RouterLink>
         <button @click="logout">Logout</button>
       </template>
@@ -45,9 +45,9 @@ function logout() {
     <Transition name="drawer">
       <div v-show="open" class="links links-mobile">
         <RouterLink to="/" @click="close">Home</RouterLink>
-        <RouterLink to="/frequencies" @click="close">Frequencies</RouterLink>
         <RouterLink to="/recovery" @click="close">Recovery</RouterLink>
         <template v-if="auth.user">
+          <RouterLink to="/frequencies" @click="close">Frequencies</RouterLink>
           <RouterLink to="/admin" @click="close">Admin</RouterLink>
           <button @click="logout">Logout</button>
         </template>
