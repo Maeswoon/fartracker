@@ -13,4 +13,4 @@ for _ in $(seq 1 20); do
 done
 pkill -KILL -f 'gunicorn.*fartracker_backend.wsgi' || true
 
-exec uv run gunicorn fartracker_backend.wsgi:application --bind 127.0.0.1:8000 --workers 3
+exec uv run gunicorn fartracker_backend.asgi:application --bind 127.0.0.1:8000 --workers 3 --worker-class uvicorn.workers.UvicornWorker

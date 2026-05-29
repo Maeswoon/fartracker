@@ -17,3 +17,9 @@ export function getMapboxToken(): string {
   }
   return mapboxToken
 }
+
+export function getTrajectoryWsUrl(): string {
+  return import.meta.env.DEV
+    ? 'ws://localhost:8000/ws/trajectories/'
+    : 'wss://tracker.faroutlaunch.org/ws/trajectories/'
+}

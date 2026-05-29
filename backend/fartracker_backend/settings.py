@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'channels',
 ]
 
 MIDDLEWARE = [
@@ -89,6 +90,12 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'fartracker_backend.wsgi.application'
+ASGI_APPLICATION = 'fartracker_backend.asgi.application'
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases

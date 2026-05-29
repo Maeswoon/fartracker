@@ -10,6 +10,14 @@ class IsTeamMember(BasePermission):
     def has_permission(self, request, view):
         return bool(request.auth and request.auth.get('is_team_member'))
 
+class IsAdminOrTeamOwner(BasePermission):
+    def has_permission(self, request, view):
+        token = request.auth
+        if token and token.get('is_admin'):
+            return True
+        team_id = view.kwargs.get('team_id')
+        return bool(token and team_id and request.user.username == team_id)
+
 class JWTCookieAuthentication(JWTAuthentication):
     def authenticate(self, request):
         cookie_name = getattr(settings, 'SIMPLE_JWT', {}).get('AUTH_COOKIE', 'access_token')

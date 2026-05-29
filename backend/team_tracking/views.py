@@ -2,10 +2,12 @@
 from typing import Dict, Optional, List
 from datetime import datetime
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.http import HttpResponse, JsonResponse
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from .auth import IsAdmin, IsTeamMember
+from .auth import IsAdmin, IsTeamMember, IsAdminOrTeamOwner
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import rest_framework.status as drf_status
@@ -281,6 +283,13 @@ def logout_view(request):
     response.delete_cookie('refresh_token', path='/api/', samesite='Lax')
     return response
 
+def _broadcast_trajectory(trajectory):
+    serializer = TrajectorySerializer(trajectory)
+    async_to_sync(get_channel_layer().group_send)(
+        'trajectories',
+        {'type': 'trajectory_update', 'data': serializer.data},
+    )
+
 class TrajectoryListView(APIView):
     permission_classes = [AllowAny]
     throttle_classes = []
@@ -292,7 +301,8 @@ class TrajectoryListView(APIView):
 
 class TrajectoryDetailView(APIView):
     def get_permissions(self):
-        return [AllowAny()] if self.request.method == 'GET' else [IsAdmin() | IsTeamMember()]
+        return [AllowAny()] if self.request.method == 'GET' else [IsAdminOrTeamOwner()]
+
 
     def get_throttles(self):
         if self.request.method == 'GET':
@@ -307,7 +317,7 @@ class TrajectoryDetailView(APIView):
 
     def _validate_points(self, data):
         pts = data.get('points')
-        if not isinstance(pts, list) or not pts or any(not isinstance(p, list) or len(p) != 3 for p in pts):
+        if not isinstance(pts, list) or any(not isinstance(p, list) or len(p) != 3 for p in pts):
             return None
         return pts
 
@@ -328,6 +338,7 @@ class TrajectoryDetailView(APIView):
         if len(pts) > 10000:
             return Response({'error': 'Trajectory exceeds 10,000 point limit'}, status=drf_status.HTTP_400_BAD_REQUEST)
         trajectory, _ = Trajectory.objects.update_or_create(team=team, defaults={'points': pts})
+        _broadcast_trajectory(trajectory)
         serializer = TrajectorySerializer(trajectory)
         return Response(serializer.data)
 
@@ -343,6 +354,7 @@ class TrajectoryDetailView(APIView):
             return Response({'error': 'Trajectory exceeds 10,000 point limit'}, status=drf_status.HTTP_400_BAD_REQUEST)
         trajectory.points.extend(pts)
         trajectory.save()
+        _broadcast_trajectory(trajectory)
         serializer = TrajectorySerializer(trajectory)
         return Response(serializer.data)
 

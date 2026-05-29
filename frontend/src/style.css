@@ -264,6 +264,15 @@ tbody tr:hover {
   border-color: var(--color-accent-red);
 }
 
+.trajectory-label {
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-shadow: 0 0 4px #000, 0 0 4px #000;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .checkbox-label input[type="checkbox"]:checked::after {
   content: '';
   display: block;

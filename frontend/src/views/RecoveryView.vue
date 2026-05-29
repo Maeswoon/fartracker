@@ -2,8 +2,9 @@
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import type { Feature, FeatureCollection } from 'geojson'
 import mapboxgl from 'mapbox-gl'
+import { Threebox } from 'threebox-plugin'
 import * as togeojson from '@mapbox/togeojson'
-import { getMapboxToken } from '@/config'
+import { getMapboxToken, getTrajectoryWsUrl } from '@/config'
 import { getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
 import type { Team, RecoveryPiece, RecoveryPath } from '@/types'
 import 'mapbox-gl/dist/mapbox-gl.css'
@@ -16,10 +17,12 @@ const teamsError = ref<string | null>(null)
 const selectedTeamFilter = ref<string>('')
 const showTrajectories = ref(false)
 
+const trajectoryTeamIds = ref<Set<string>>(new Set())
 const recoveryTeamIds = computed(() => {
   const ids = new Set<string>()
   for (const p of allPieces.value) ids.add((p as any).team_identifier)
   for (const t of paths.value) ids.add(t.team_identifier)
+  for (const id of trajectoryTeamIds.value) ids.add(id)
   return ids
 })
 
@@ -35,12 +38,50 @@ const filterableTeams = computed(() => {
   return allTeams.value.filter(t => ids.has(t.team_identifier))
 })
 
-watch(selectedTeamFilter, () => Promise.all([updateRecoveryPieces(), updatePaths()]))
+watch(selectedTeamFilter, () => {
+  Promise.all([updateRecoveryPieces(), updatePaths()])
+  rerenderTrajectories()
+})
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: mapboxgl.Map | null = null
+let tb: InstanceType<typeof Threebox> | null = null
 let resizeObserver: ResizeObserver | null = null
 let pollInterval: ReturnType<typeof setInterval> | null = null
+let ws: WebSocket | null = null
+const trajectoryFeatures = ref<Feature[]>([])
+const allTrajectories = ref<any[]>([])
+const tbObjects: Map<number, any[]> = new Map()
+const upsertTrajectory = (t: any) => {
+  if (!tb) return
+  if (!t.points || t.points.length < 2) return
+  const objs: any[] = []
+  const coords = t.points.map((p: number[]) => [p[1], p[0], p[2]])
+  const line = tb.line({ geometry: coords, color: 0xff4500, width: 5, opacity: 0.9 })
+  tb.add(line)
+  objs.push(line)
+  const last = t.points[t.points.length - 1]
+  const lbl = tb.label({
+    htmlElement: `<div class="trajectory-label">${t.team_name || ''}  ${last[2].toLocaleString()} ft</div>`,
+    alwaysVisible: true,
+  })
+  lbl.setCoords([last[1], last[0], last[2] + 30])
+  tb.add(lbl)
+  objs.push(lbl)
+  tbObjects.set(t.id, objs)
+}
+const clearTrajectories = () => {
+  tbObjects.forEach((objs) => objs.forEach((o: any) => tb!.remove(o)))
+  tbObjects.clear()
+}
+const rerenderTrajectories = () => {
+  if (!tb) return
+  clearTrajectories()
+  const filtered = selectedTeamFilter.value
+    ? allTrajectories.value.filter((t: any) => t.team_identifier === selectedTeamFilter.value)
+    : allTrajectories.value
+  filtered.forEach((t: any) => upsertTrajectory(t))
+}
 
 function midpoint(geometry: any): number[] {
   const coords: number[][] = []
@@ -135,8 +176,11 @@ onMounted(async () => {
     container: mapContainer.value!,
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
     center: [-117.80898, 35.34715],
-    zoom: 14,
+    zoom: 12.5,
   })
+
+  tb = new Threebox(map, map.getCanvas().getContext('webgl')!, { defaultLights: true });
+  (window as any).tb = tb
 
   map.on('load', () => {
     fetch('/far_areas.kml')
@@ -188,6 +232,7 @@ onMounted(async () => {
         map!.addSource('recovery-pieces', { type: 'geojson', data: empty })
         map!.addSource('paths', { type: 'geojson', data: empty })
         map!.addSource('path-dashes', { type: 'geojson', data: empty })
+        map!.addSource('trajectories', { type: 'geojson', data: empty })
 
         map!.addLayer({
           id: 'recovery-pieces-circles',
@@ -235,12 +280,64 @@ onMounted(async () => {
           },
           paint: { 'text-color': '#00FF00', 'text-halo-color': '#000', 'text-halo-width': 1 },
         })
+        map!.addLayer({
+          id: 'trajectory-lines',
+          type: 'custom',
+          renderingMode: '3d',
+          onAdd: function () {},
+          render: function () {
+            if (tb) tb.update()
+          },
+        })
       })
       .then(() => Promise.all([updateRecoveryPieces(), updatePaths()]))
       .catch(err => console.error('Error loading KML:', err))
   })
 
-  watch(showTrajectories, (val) => map?.easeTo({ pitch: val ? 60 : 0 }))
+  watch(showTrajectories, (val) => {
+    map?.easeTo({ pitch: val ? 60 : 0, zoom: val ? 9.5 : 12.5, center: [-117.80898, 35.34715] })
+    if (val) {
+      ws = new WebSocket(getTrajectoryWsUrl())
+      ws.onmessage = (event) => {
+        const msg = JSON.parse(event.data)
+        const source = map?.getSource('trajectories') as mapboxgl.GeoJSONSource | undefined
+        if (!source) return
+        const makeFeature = (t: any) => ({
+          type: 'Feature' as const,
+          geometry: { type: 'LineString' as const, coordinates: (t.points || []).map((p: number[]) => [p[1], p[0]]) },
+          properties: { id: t.id, name: t.team_name, team_identifier: t.team_identifier, altitudes: (t.points || []).map((p: number[]) => p[2]) },
+        })
+        if (msg.type === 'initial') {
+          trajectoryFeatures.value = msg.trajectories.map(makeFeature)
+        } else {
+          const idx = trajectoryFeatures.value.findIndex((f: any) => f.properties?.id === msg.trajectory?.id)
+          const feat = makeFeature(msg.trajectory)
+          const current = trajectoryFeatures.value
+          trajectoryFeatures.value = idx >= 0
+            ? [...current.slice(0, idx), feat, ...current.slice(idx + 1)]
+            : [...current, feat]
+        }
+        source.setData({ type: 'FeatureCollection', features: trajectoryFeatures.value })
+        if (msg.type === 'initial') {
+          allTrajectories.value = msg.trajectories
+          trajectoryTeamIds.value = new Set<string>(msg.trajectories.map((t: any) => t.team_identifier as string))
+        } else {
+          const idx = allTrajectories.value.findIndex((t: any) => t.id === msg.trajectory.id)
+          if (idx >= 0) allTrajectories.value[idx] = msg.trajectory
+          else allTrajectories.value.push(msg.trajectory)
+          trajectoryTeamIds.value = new Set([...trajectoryTeamIds.value, msg.trajectory.team_identifier])
+        }
+        rerenderTrajectories()
+      }
+    } else {
+      ws?.close()
+      ws = null
+      const source = map?.getSource('trajectories') as mapboxgl.GeoJSONSource | undefined
+      source?.setData({ type: 'FeatureCollection', features: [] })
+      clearTrajectories()
+      trajectoryTeamIds.value = new Set()
+    }
+  })
 
   resizeObserver = new ResizeObserver(() => map?.resize())
   resizeObserver.observe(mapContainer.value!)
@@ -248,6 +345,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (pollInterval) clearInterval(pollInterval)
+  ws?.close()
   resizeObserver?.disconnect()
   map?.remove()
 })

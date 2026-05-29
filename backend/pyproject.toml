@@ -12,6 +12,9 @@ dependencies = [
   "djangorestframework",
   "djangorestframework-simplejwt",
   "python-dotenv",
+  "channels>=4.3.2",
+  "uvicorn>=0.48.0",
+  "websockets>=16.0",
 ]
 
 [tool.setuptools.packages.find]
