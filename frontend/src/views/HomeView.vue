@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { storeToRefs } from 'pinia'
 import { RouterLink } from 'vue-router'
 import { getTeams } from '@/api'
@@ -14,7 +14,6 @@ const teamsLoading = ref(true)
 const teamsError = ref<string | null>(null)
 
 onMounted(async () => {
-  siteStatus.startPolling()
   try {
     teams.value = await getTeams()
   } catch {
@@ -23,8 +22,6 @@ onMounted(async () => {
     teamsLoading.value = false
   }
 })
-
-onUnmounted(() => siteStatus.stopPolling())
 </script>
 
 <template>

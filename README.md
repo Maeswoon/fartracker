@@ -6,6 +6,7 @@
 
 Generate secrets (one time): `./generate-secrets.sh`
 SSL certificates are generated with `ssls.com` and verified via an ACME challenge file.
+For development, make sure `frontend/.env` is populated with `VITE_MAPBOX_TOKEN=...`
 
 ## Frontend
 Install dependencies: `npm install`

@@ -71,7 +71,7 @@ export interface RecoveryPiece {
   team_identifier?: string
 }
 
-export interface RecoveryTrajectory {
+export interface RecoveryTrajectoryPoint {
   id: number
   lat: number
   lon: number
