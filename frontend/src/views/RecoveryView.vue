@@ -15,14 +15,22 @@ const paths = ref<RecoveryPath[]>([])
 const loadingTeams = ref(true)
 const teamsError = ref<string | null>(null)
 const selectedTeamFilter = ref<string>('')
+const showPieces = ref(true)
+const showPaths = ref(false)
 const showTrajectories = ref(false)
 
 const trajectoryTeamIds = ref<Set<string>>(new Set())
 const recoveryTeamIds = computed(() => {
   const ids = new Set<string>()
-  for (const p of allPieces.value) ids.add((p as any).team_identifier)
-  for (const t of paths.value) ids.add(t.team_identifier)
-  for (const id of trajectoryTeamIds.value) ids.add(id)
+  if (showPieces.value) {
+    for (const p of allPieces.value) ids.add(p.team_identifier)
+  }
+  if (showPaths.value) {
+    for (const t of paths.value) ids.add(t.team_identifier)
+  }
+  if (showTrajectories.value) {
+    for (const id of trajectoryTeamIds.value) ids.add(id)
+  }
   return ids
 })
 
@@ -38,10 +46,86 @@ const filterableTeams = computed(() => {
   return allTeams.value.filter(t => ids.has(t.team_identifier))
 })
 
-watch(selectedTeamFilter, () => {
-  Promise.all([updateRecoveryPieces(), updatePaths()])
-  rerenderTrajectories()
-})
+watch(selectedTeamFilter, syncDisplay)
+
+function syncDisplay() {
+  if (!map) return
+  updatePieceSource()
+  updatePathSource()
+  updateTrajectoryDisplay()
+  updateLayerVisibility()
+}
+
+function updatePieceSource() {
+  const source = map?.getSource('recovery-pieces') as mapboxgl.GeoJSONSource | undefined
+  if (!source) return
+  const filtered = selectedTeamFilter.value
+    ? allPieces.value.filter(p => p.team_identifier === selectedTeamFilter.value)
+    : allPieces.value
+  source.setData({
+    type: 'FeatureCollection',
+    features: filtered.map(p => ({
+      type: 'Feature' as const,
+      geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] },
+      properties: { name: p.object_name, teamName: p.team_name },
+    })),
+  })
+}
+
+function updatePathSource() {
+  const pathSource = map?.getSource('paths') as mapboxgl.GeoJSONSource | undefined
+  const dashSource = map?.getSource('path-dashes') as mapboxgl.GeoJSONSource | undefined
+  if (!pathSource || !dashSource) return
+
+  const recoveringIds = new Set(teams.value.map(t => t.team_identifier))
+  const filtered = selectedTeamFilter.value
+    ? paths.value.filter(t => t.team_identifier === selectedTeamFilter.value && recoveringIds.has(t.team_identifier))
+    : paths.value.filter(t => recoveringIds.has(t.team_identifier))
+
+  const pathFeatures: Feature[] = []
+  const dashedFeatures: Feature[] = []
+  for (const team of filtered) {
+    if (!team.coords.length) continue
+    const path = team.coords.map(c => [Number(c.lon), Number(c.lat)] as [number, number])
+    pathFeatures.push({
+      type: 'Feature',
+      geometry: { type: 'LineString', coordinates: path },
+      properties: { name: team.name },
+    })
+    const last = path[path.length - 1]
+    dashedFeatures.push({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: last },
+      properties: { label: `${team.name}\nCURRENT LOCATION` },
+    })
+  }
+  pathSource.setData({ type: 'FeatureCollection', features: pathFeatures })
+  dashSource.setData({ type: 'FeatureCollection', features: dashedFeatures })
+}
+
+function updateTrajectoryDisplay() {
+  if (!tb) return
+  clearTrajectories()
+  if (!showTrajectories.value) return
+  const filtered = selectedTeamFilter.value
+    ? allTrajectories.value.filter((t: any) => t.team_identifier === selectedTeamFilter.value)
+    : allTrajectories.value
+  filtered.forEach((t: any) => upsertTrajectory(t))
+}
+
+function updateLayerVisibility() {
+  if (map?.getLayer('recovery-pieces-circles')) {
+    const v = showPieces.value ? 'visible' : 'none'
+    map!.setLayoutProperty('recovery-pieces-circles', 'visibility', v)
+    map!.setLayoutProperty('recovery-pieces-labels', 'visibility', v)
+  }
+  if (map?.getLayer('path-lines')) {
+    const v = showPaths.value ? 'visible' : 'none'
+    map!.setLayoutProperty('path-lines', 'visibility', v)
+    map!.setLayoutProperty('path-last-point', 'visibility', v)
+    map!.setLayoutProperty('path-last-point-label', 'visibility', v)
+  }
+}
 
 const mapContainer = ref<HTMLDivElement | null>(null)
 let map: mapboxgl.Map | null = null
@@ -74,15 +158,6 @@ const clearTrajectories = () => {
   tbObjects.forEach((objs) => objs.forEach((o: any) => tb!.remove(o)))
   tbObjects.clear()
 }
-const rerenderTrajectories = () => {
-  if (!tb) return
-  clearTrajectories()
-  const filtered = selectedTeamFilter.value
-    ? allTrajectories.value.filter((t: any) => t.team_identifier === selectedTeamFilter.value)
-    : allTrajectories.value
-  filtered.forEach((t: any) => upsertTrajectory(t))
-}
-
 function midpoint(geometry: any): number[] {
   const coords: number[][] = []
   const collect = (g: any) => {
@@ -110,61 +185,9 @@ async function fetchTeams() {
   } finally {
     loadingTeams.value = false
   }
-  await updateRecoveryPieces()
-  await updatePaths()
+  syncDisplay()
 }
 
-function updatePaths() {
-  const pathSource = map?.getSource('paths') as mapboxgl.GeoJSONSource | undefined
-  const dashSource = map?.getSource('path-dashes') as mapboxgl.GeoJSONSource | undefined
-  if (!pathSource || !dashSource) return
-
-  const recoveringIds = new Set(teams.value.map(t => t.team_identifier))
-  const filtered = selectedTeamFilter.value
-    ? paths.value.filter(t => t.team_identifier === selectedTeamFilter.value && recoveringIds.has(t.team_identifier))
-    : paths.value.filter(t => recoveringIds.has(t.team_identifier))
-
-  const pathFeatures: Feature[] = []
-  const dashedFeatures: Feature[] = []
-
-  for (const team of filtered) {
-    if (!team.coords.length) continue
-    const path = team.coords.map(c => [Number(c.lon), Number(c.lat)] as [number, number])
-    pathFeatures.push({
-      type: 'Feature',
-      geometry: { type: 'LineString', coordinates: path },
-      properties: { name: team.name },
-    })
-
-    const last = path[path.length - 1]
-    dashedFeatures.push({
-      type: 'Feature',
-      geometry: { type: 'Point', coordinates: last },
-      properties: { label: `${team.name}\nCURRENT LOCATION` },
-    })
-  }
-
-  pathSource.setData({ type: 'FeatureCollection', features: pathFeatures })
-  dashSource.setData({ type: 'FeatureCollection', features: dashedFeatures })
-}
-
-function updateRecoveryPieces() {
-  const source = map?.getSource('recovery-pieces') as mapboxgl.GeoJSONSource | undefined
-  if (!source) return
-
-  const filteredPieces = selectedTeamFilter.value
-    ? allPieces.value.filter((p: any) => p.team_identifier === selectedTeamFilter.value)
-    : allPieces.value
-
-  source.setData({
-    type: 'FeatureCollection',
-    features: filteredPieces.map((p: any) => ({
-      type: 'Feature' as const,
-      geometry: { type: 'Point' as const, coordinates: [p.lon, p.lat] },
-      properties: { name: p.object_name, teamName: p.team_name },
-    })),
-  })
-}
 
 onMounted(async () => {
   await fetchTeams()
@@ -290,7 +313,7 @@ onMounted(async () => {
           },
         })
       })
-      .then(() => Promise.all([updateRecoveryPieces(), updatePaths()]))
+      .then(syncDisplay)
       .catch(err => console.error('Error loading KML:', err))
   })
 
@@ -327,17 +350,17 @@ onMounted(async () => {
           else allTrajectories.value.push(msg.trajectory)
           trajectoryTeamIds.value = new Set([...trajectoryTeamIds.value, msg.trajectory.team_identifier])
         }
-        rerenderTrajectories()
+        syncDisplay()
       }
     } else {
       ws?.close()
       ws = null
-      const source = map?.getSource('trajectories') as mapboxgl.GeoJSONSource | undefined
-      source?.setData({ type: 'FeatureCollection', features: [] })
-      clearTrajectories()
-      trajectoryTeamIds.value = new Set()
+      syncDisplay()
     }
   })
+
+  watch(showPieces, syncDisplay)
+  watch(showPaths, syncDisplay)
 
   resizeObserver = new ResizeObserver(() => map?.resize())
   resizeObserver.observe(mapContainer.value!)
@@ -365,10 +388,24 @@ onUnmounted(() => {
             <option v-for="t in filterableTeams" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
           </select>
         </div>
-        <label class="checkbox-label">
-          <input v-model="showTrajectories" type="checkbox" />
-          Display flight trajectories
-        </label>
+        <div class="display-options">
+          <h4>Display</h4>
+          <label class="toggle-row">
+            <span>Pieces</span>
+            <input v-model="showPieces" type="checkbox" class="toggle-input" />
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="toggle-row">
+            <span>Paths</span>
+            <input v-model="showPaths" type="checkbox" class="toggle-input" />
+            <span class="toggle-slider"></span>
+          </label>
+          <label class="toggle-row">
+            <span>Flight trajectories</span>
+            <input v-model="showTrajectories" type="checkbox" class="toggle-input" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
         <p v-if="teams.length === 0">No teams are presently out for recovery.</p>
         <div v-else class="table-wrapper">
           <table>
@@ -443,5 +480,55 @@ onUnmounted(() => {
 .team-filter select option {
   background-color: white;
   color: var(--color-text-on-light);
+}
+
+.display-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  cursor: pointer;
+  color: var(--color-text);
+}
+
+.toggle-input {
+  display: none;
+}
+
+.toggle-slider {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+  background: #555;
+  border-radius: 12px;
+  transition: background 0.2s;
+}
+
+.toggle-slider::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.2s;
+}
+
+.toggle-input:checked + .toggle-slider {
+  background: var(--color-accent-red);
+}
+
+.toggle-input:checked + .toggle-slider::after {
+  transform: translateX(20px);
 }
 </style>

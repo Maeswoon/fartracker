@@ -130,12 +130,7 @@ class AllRecoveryPiecesView(APIView):
     def get(self, request) -> Response:
         """Return all recovery pieces with team info and recovery path coordinates."""
         pieces = RecoveryPiece.objects.select_related('team').all()
-        pieces_data = []
-        for p in pieces:
-            item = RecoveryPieceSerializer(p).data
-            item['team_name'] = p.team.name
-            item['team_identifier'] = p.team.team_identifier
-            pieces_data.append(item)
+        pieces_data = RecoveryPieceSerializer(pieces, many=True).data
 
         teams_with_coords = Team.objects.exclude(recovery_coordinates__coords__isnull=True)
         paths = []

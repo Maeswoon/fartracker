@@ -69,8 +69,8 @@ export interface RecoveryPiece {
   object_name: string
   lat: number
   lon: number
-  team_name?: string
-  team_identifier?: string
+  team_name: string
+  team_identifier: string
 }
 
 export interface RecoveryPathPoint {
