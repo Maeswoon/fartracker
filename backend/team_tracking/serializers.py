@@ -1,6 +1,32 @@
+from functools import lru_cache
 from rest_framework import serializers
-
 from .models import Team, LaunchRail, Bunker, SiteStatus, TeamStatus, RecoveryPiece, Trajectory
+
+def _get_lane_of_team(team_identifier: str) -> str | None:
+    """Return the short_label of the lane a team is in, defaulting to 'Pending'."""
+    from .models import SalvoSchedule
+    from .views import DEFAULT_LANE_DEFINITIONS
+
+    schedule = SalvoSchedule.objects.first()
+    lane_teams = schedule.lane_teams if schedule else {}
+    if not isinstance(lane_teams, dict):
+        lane_teams = {}
+    lane_defs = schedule.lane_definitions if schedule else None
+    lane_defs = lane_defs or DEFAULT_LANE_DEFINITIONS
+
+    # Check if team is explicitly placed in a lane
+    for lane_id, team_ids in lane_teams.items():
+        if team_identifier in team_ids:
+            for ld in lane_defs:
+                if ld['id'] == lane_id:
+                    return ld.get('short_label', ld['label'])
+            return lane_id  # lane exists but not in definitions
+
+    # Not in any lane — default to Pending
+    for ld in lane_defs:
+        if ld['id'] == 'pending':
+            return ld.get('short_label', ld['label'])
+    return 'Pending'
 
 class BunkerSerializer(serializers.ModelSerializer):
     class Meta:
@@ -40,8 +66,7 @@ class TeamAbbreviatedSerializer(serializers.ModelSerializer):
         fields = ['name', 'team_identifier', 'status']
 
     def get_status(self, team):
-        status = TeamStatus.objects.filter(team=team).order_by('-timestamp').first()
-        return status.status if status else None
+        return _get_lane_of_team(team.team_identifier)
 
 class TeamStatusSerializer(serializers.ModelSerializer):
     team_name = serializers.SerializerMethodField()
@@ -93,23 +118,18 @@ class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = ['name', 'university', 'team_identifier', 'category', 'fuel_oxidizer',
-                  'engine_type_display', 'status', 'pad_name']
+                  'engine_type_display', 'status', 'pad_name', 'fill_to_fire', 'hold_time', 'salvo_time']
 
     def get_status(self, team):
-        status = TeamStatus.objects.filter(team=team).order_by('-timestamp').first()
-        if not status:
-            return None
-        status_serializer = TeamStatusSerializer(status, context={'team': team})
-        return status_serializer.data['status']
+        return _get_lane_of_team(team.team_identifier)
 
     def get_pad_name(self, team):
-        status = TeamStatus.objects.filter(team=team).order_by('-timestamp').first()
-        return status.pad_name if status else None
+        return None  # pad_name was from TeamStatus, now unused
 
 class TeamWriteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
-        fields = ['name', 'university', 'team_identifier', 'category', 'engine_type', 'fuel_oxidizer', 'target_altitude']
+        fields = ['name', 'university', 'team_identifier', 'category', 'engine_type', 'fuel_oxidizer', 'target_altitude', 'fill_to_fire', 'hold_time', 'salvo_time']
 
 class RecoveryPieceSerializer(serializers.ModelSerializer):
     object_name = serializers.CharField(source='name', max_length=30)

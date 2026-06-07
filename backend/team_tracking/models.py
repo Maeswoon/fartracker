@@ -82,6 +82,10 @@ class Team(models.Model):
 
     target_altitude = models.IntegerField(blank=True, null=True)
 
+    fill_to_fire = models.FloatField(default=0.0, help_text='Fill-to-fire time in minutes')
+    hold_time = models.FloatField(default=0.0, help_text='Hold time in minutes')
+    salvo_time = models.IntegerField(default=0, help_text='Assigned time-slot index (0=0min, 1=2min, …)')
+
     # Other information
     gps_frequencies = models.JSONField(default=list, blank=True, null=True)
     recovery_coordinates = models.JSONField(default=list, blank=True, null=True)
@@ -135,3 +139,14 @@ class SiteStatus(models.Model):
         RED = 'R', _('Red Flag')
     timestamp = models.DateTimeField(auto_now_add=True)
     status = models.CharField(max_length=1, choices=SiteStatusChoice.choices)
+
+
+class SalvoSchedule(models.Model):
+    lane_definitions = models.JSONField(default=list)
+    lane_teams = models.JSONField(default=dict)
+    team_data = models.JSONField(default=dict)
+    salvo_timer_started = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Salvo Schedule (updated {self.updated_at.isoformat()})"

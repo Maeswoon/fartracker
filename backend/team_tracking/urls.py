@@ -17,5 +17,7 @@ urlpatterns = [
     path('frequencies', views.get_frequency_information, name="frequencies"),
     path('teams/<str:team_id>/frequencies', views.update_team_frequencies, name="team_frequencies"),
     path('current-user', views.current_user, name='current_user'),
-    path("site_status", views.SiteStatusView.as_view(), name="site_status")
+    path("site_status", views.SiteStatusView.as_view(), name="site_status"),
+    path("schedule/timer", views.ScheduleTimerView.as_view(), name="schedule-timer"),
+    path("schedule", views.ScheduleView.as_view(), name="schedule"),
 ]

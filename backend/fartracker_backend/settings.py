@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'corsheaders',
     'rest_framework',
+    'channels_yroom',
     'channels',
     'drf_spectacular',
     'drf_spectacular_sidecar',
@@ -96,6 +97,14 @@ ASGI_APPLICATION = 'fartracker_backend.asgi.application'
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+YROOM_SETTINGS = {
+    'schedule': {
+        'CHANNEL_NAME': 'yroom',
+        'REMOVE_ROOM_DELAY': 30,
+        'STORAGE_BACKEND': 'channels_yroom.storage.YDocDatabaseStorage',
     },
 }
 
@@ -205,6 +214,23 @@ SIMPLE_JWT = {
     'AUTH_COOKIE_REFRESH': 'refresh_token',
     'AUTH_COOKIE_SECURE': not DEBUG,
     'AUTH_COOKIE_HTTP_ONLY': True,
-    'AUTH_COOKIE_PATH': '/api/',
+    'AUTH_COOKIE_PATH': '/',
     'AUTH_COOKIE_SAMESITE': 'Lax',
+}
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'fartracker': {
+            'handlers': ['console'],
+            'level': 'DEBUG' if DEBUG else 'INFO',
+            'propagate': False,
+        },
+    },
 }

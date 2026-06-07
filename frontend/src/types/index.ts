@@ -78,3 +78,29 @@ export interface RecoveryPathPoint {
   lat: number
   lon: number
 }
+
+export interface ScheduleTeam {
+  team_identifier: string
+  name: string
+  university: string
+  category: string
+  engine_type: string
+  fill_to_fire: number
+  hold_time: number
+  salvo_time: number
+}
+
+export interface ScheduleLane {
+  id: string
+  label: string
+  short_label: string
+  teams: ScheduleTeam[]
+}
+
+export interface SalvoScheduleResponse {
+  lane_definitions: { id: string; label: string; short_label: string }[]
+  lane_teams: Record<string, string[]>
+  team_data: Record<string, Record<string, number>>
+  salvo_timer_started: string | null
+  teams: ScheduleTeam[]
+}

@@ -17,6 +17,7 @@ dependencies = [
   "websockets>=16.0",
   "drf-spectacular>=0.29.0",
   "drf-spectacular-sidecar>=2026.5.1",
+  "channels-yroom>=0.0.6",
 ]
 
 [tool.setuptools.packages.find]

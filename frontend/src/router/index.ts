@@ -6,6 +6,7 @@ const routes = [
   { path: '/frequencies', component: () => import('@/views/FrequenciesView.vue'), meta: { requiresAdmin: true } },
   { path: '/teams/:teamId', component: () => import('@/views/TeamView.vue') },
   { path: '/recovery', component: () => import('@/views/RecoveryView.vue') },
+  { path: '/schedule', component: () => import('@/views/ScheduleView.vue') },
   { path: '/login', component: () => import('@/views/LoginView.vue') },
   { path: '/admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAdmin: true } },
 ]

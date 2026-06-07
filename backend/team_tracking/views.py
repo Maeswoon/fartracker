@@ -5,6 +5,7 @@ from datetime import datetime
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.http import HttpResponse, JsonResponse
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -15,7 +16,7 @@ import rest_framework.status as drf_status
 
 from .serializers import TeamSerializer, SiteStatusSerializer, TeamStatusSerializer, TeamAbbreviatedSerializer, \
     TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer, TrajectorySerializer
-from .models import Team, TeamStatus, RecoveryPiece, SiteStatus, Trajectory
+from .models import SalvoSchedule, Team, TeamStatus, RecoveryPiece, SiteStatus, Trajectory
 
 @extend_schema(auth=[])
 def index(request):
@@ -295,8 +296,8 @@ def current_user(request):
 def logout_view(request):
     """Clear authentication cookies."""
     response = Response({'detail': 'Logged out'})
-    response.delete_cookie('access_token', path='/api/', samesite='Lax')
-    response.delete_cookie('refresh_token', path='/api/', samesite='Lax')
+    response.delete_cookie('access_token', path='/', samesite='Lax')
+    response.delete_cookie('refresh_token', path='/', samesite='Lax')
     return response
 
 def _broadcast_trajectory(trajectory):
@@ -387,3 +388,89 @@ class TrajectoryDetailView(APIView):
         _broadcast_trajectory(trajectory)
         serializer = TrajectorySerializer(trajectory)
         return Response(serializer.data)
+
+
+DEFAULT_LANE_DEFINITIONS = [
+    {'id': 'pending', 'label': 'Pending', 'short_label': 'Pending'},
+    {'id': 'salvo', 'label': 'Salvo', 'short_label': 'In Salvo'},
+    {'id': 'in-recovery', 'label': 'In Recovery', 'short_label': 'Recovering'},
+    {'id': 'recovered', 'label': 'Recovered', 'short_label': 'Recovered'},
+]
+
+
+def _build_lanes_response(schedule: SalvoSchedule) -> dict:
+    """Return raw schedule pieces so the frontend can assemble lanes
+    using the same merge logic for both the Yjs WebSocket path and
+    the REST polling path."""
+    return {
+        'lane_definitions': schedule.lane_definitions or DEFAULT_LANE_DEFINITIONS,
+        'lane_teams': schedule.lane_teams if isinstance(schedule.lane_teams, dict) else {},
+        'team_data': schedule.team_data if isinstance(schedule.team_data, dict) else {},
+        'salvo_timer_started': schedule.salvo_timer_started.isoformat() if schedule.salvo_timer_started else None,
+        'teams': [{
+            'team_identifier': t.team_identifier,
+            'name': t.name,
+            'university': t.university,
+            'category': t.category,
+            'engine_type': t.get_engine_type_display(),
+            'fill_to_fire': t.fill_to_fire,
+            'hold_time': t.hold_time,
+            'salvo_time': t.salvo_time,
+        } for t in Team.objects.all()],
+    }
+
+
+class ScheduleView(APIView):
+    throttle_classes = []
+
+    def get(self, request) -> Response:
+        schedule = SalvoSchedule.objects.first()
+        if not schedule:
+            return Response({
+                'lane_definitions': DEFAULT_LANE_DEFINITIONS,
+                'lane_teams': {},
+                'team_data': {},
+                'salvo_timer_started': None,
+                'teams': [{
+                    'team_identifier': t.team_identifier,
+                    'name': t.name,
+                    'university': t.university,
+                    'category': t.category,
+                    'engine_type': t.get_engine_type_display(),
+                    'fill_to_fire': t.fill_to_fire,
+                    'hold_time': t.hold_time,
+                    'salvo_time': t.salvo_time,
+                } for t in Team.objects.all()],
+            })
+        return Response(_build_lanes_response(schedule))
+
+    def post(self, request) -> Response:
+        self.permission_classes = [IsAdmin]
+        self.check_permissions(request)
+        schedule, _ = SalvoSchedule.objects.get_or_create(pk=1)
+        if 'lane_definitions' in request.data:
+            schedule.lane_definitions = request.data['lane_definitions']
+        if 'lane_teams' in request.data:
+            schedule.lane_teams = request.data['lane_teams']
+        schedule.save()
+        return Response(_build_lanes_response(schedule))
+
+
+class ScheduleTimerView(APIView):
+    throttle_classes = []
+
+    def post(self, request) -> Response:
+        self.permission_classes = [IsAdmin]
+        self.check_permissions(request)
+        schedule, _ = SalvoSchedule.objects.get_or_create(pk=1)
+        action = request.data.get('action', '')
+        if action == 'start':
+            schedule.salvo_timer_started = timezone.now()
+        elif action == 'clear':
+            schedule.salvo_timer_started = None
+        else:
+            return Response({'error': 'Invalid action'}, status=400)
+        schedule.save()
+        return Response({
+            'salvo_timer_started': schedule.salvo_timer_started.isoformat() if schedule.salvo_timer_started else None,
+        })

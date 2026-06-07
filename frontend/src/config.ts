@@ -23,3 +23,9 @@ export function getTrajectoryWsUrl(): string {
     ? 'ws://localhost:8000/ws/trajectories/'
     : 'wss://tracker.faroutlaunch.org/ws/trajectories/'
 }
+
+export function getScheduleWsUrl(): string {
+  return import.meta.env.DEV
+    ? 'ws://localhost:8000/ws/'
+    : 'wss://tracker.faroutlaunch.org/ws/'
+}

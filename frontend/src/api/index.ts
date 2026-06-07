@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteStatusResponse, RecoveryPiece, AllRecoveryResponse } from '@/types'
+import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteStatusResponse, RecoveryPiece, AllRecoveryResponse, SalvoScheduleResponse } from '@/types'
 
 const BASE_URL = import.meta.env.DEV
   ? 'http://localhost:8000/api'
@@ -65,3 +65,8 @@ export const deleteRecoveryPiece = (team: string, pieceId: number) =>
   api.delete(`/team_tracking/teams/${team}/recovery/${pieceId}`).then(r => r.data)
 export const postRecoveryPath = (team: string, lat: number, lon: number) =>
   api.post(`/team_tracking/teams/${team}/recovery/path`, { lat, lon }).then(r => r.data)
+
+export const getSchedule = () =>
+  api.get<SalvoScheduleResponse>('/team_tracking/schedule').then(r => r.data)
+export const postSalvoTimer = (action: 'start' | 'clear') =>
+  api.post('/team_tracking/schedule/timer', { action }).then(r => r.data)

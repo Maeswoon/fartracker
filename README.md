@@ -15,9 +15,9 @@ Build: `npm run build`
 
 ## Backend
 Install dependencies: `uv sync`
-Run locally: `DJANGO_DEBUG=1 uv run python3 manage.py runserver 8000`
+Run locally: `DJANGO_DEBUG=1 uv run uvicorn fartracker_backend.asgi:application --port 8000 --reload`
 
 ## Deployment
-Deploy frontend only: `./deploy.sh --frontend-only`
-Deploy backend and frontend: `./deploy.sh` (**this will back up and overwrite the database**)
+Deploy backend/frontend only: `./deploy.sh --keep-db`
+Deploy everything: `./deploy.sh` (**this will back up and overwrite the database**)
 Backend admin panel can be accessed at <https://tracker.faroutlaunch.org/api/admin>
