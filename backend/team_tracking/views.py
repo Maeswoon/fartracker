@@ -180,26 +180,58 @@ class RecoveryPieceView(APIView):
         return Response(serializer.errors, status=drf_status.HTTP_400_BAD_REQUEST)
 
 @extend_schema(auth=[{'cookieAuth': []}])
-@api_view(['DELETE'])
+@api_view(['DELETE', 'PATCH'])
 @permission_classes([IsAdmin])
 def delete_recovery_piece(request, team_id: str, piece_id: int):
-    """Delete a recovery piece. Requires admin."""
+    """Delete or update a recovery piece. Requires admin."""
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
-    deleted_count, _ = RecoveryPiece.objects.filter(id=piece_id, team=team).delete()
-    if not deleted_count:
+    piece = RecoveryPiece.objects.filter(id=piece_id, team=team).first()
+    if not piece:
         return Response({'error': 'Piece not found'}, status=drf_status.HTTP_404_NOT_FOUND)
-    return Response({"deleted": deleted_count})
+
+    if request.method == 'DELETE':
+        piece.delete()
+        return Response({"deleted": True})
+
+    # PATCH — update fields
+    if 'object_name' in request.data:
+        piece.name = request.data['object_name']
+    for field in ('lat', 'lon'):
+        if field in request.data:
+            setattr(piece, field, request.data[field])
+    piece.save()
+    serializer = RecoveryPieceSerializer(piece)
+    return Response(serializer.data)
 
 @extend_schema(auth=[{'cookieAuth': []}])
-@api_view(['POST'])
+@api_view(['GET', 'POST', 'PUT'])
 @permission_classes([IsAdmin])
 def update_team_recovery_path(request, team_id: str):
-    """Append a coordinate to a team's recovery path. Requires admin. Body: {"lat": 35.3, "lon": -117.8}."""
+    """Manage a team's recovery path. Requires admin.
+    GET  — return the team's recovery path coords.
+    POST — append a coordinate. Body: {"lat": 35.3, "lon": -117.8}.
+    PUT  — replace all coords. Body: {"coords": [{"lat": ..., "lon": ...}, ...]}."""
     team = Team.objects.filter(team_identifier=team_id).first()
     if not team:
         return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+
+    if request.method == 'GET':
+        coords = (team.recovery_coordinates or {}).get('coords', [])
+        return Response({'coords': coords})
+
+    if request.method == 'PUT':
+        coords = request.data.get('coords')
+        if coords is None:
+            return Response({'error': 'coords is required'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        if not isinstance(coords, list):
+            return Response({'error': 'coords must be a list'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        team.recovery_coordinates = {'coords': coords}
+        team.save()
+        return Response({'coords': coords})
+
+    # POST — append
     lon = request.data.get('lon')
     lat = request.data.get('lat')
     if lon is None or lat is None:
@@ -214,8 +246,24 @@ def update_team_recovery_path(request, team_id: str):
         team.recovery_coordinates = {}
     team.recovery_coordinates.setdefault('coords', []).append({"lon": lon, "lat": lat, "timestamp": timestamp})
     team.save()
-    serializer = TeamDetailedSerializer(team)
-    return Response(serializer.data)
+    return Response({'coords': team.recovery_coordinates.get('coords', [])})
+
+
+@extend_schema(auth=[{'cookieAuth': []}])
+@api_view(['DELETE'])
+@permission_classes([IsAdmin])
+def delete_recovery_path_point(request, team_id: str, index: int):
+    """Delete a recovery path point by index. Requires admin."""
+    team = Team.objects.filter(team_identifier=team_id).first()
+    if not team:
+        return Response({'error': 'Team not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+    coords = (team.recovery_coordinates or {}).get('coords', [])
+    if index < 0 or index >= len(coords):
+        return Response({'error': 'Index out of range'}, status=drf_status.HTTP_400_BAD_REQUEST)
+    coords.pop(index)
+    team.recovery_coordinates['coords'] = coords
+    team.save()
+    return Response({'coords': coords})
 
 def get_pads(request):
     """Return pad statuses (not yet implemented)."""

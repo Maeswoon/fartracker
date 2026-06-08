@@ -85,6 +85,26 @@ ssh farout-aws <<EOF
 
   # Backend service
   sudo snap install --classic astral-uv
+  sudo apt install -y nginx nodejs
+  if command -v rustup &> /dev/null; then
+    echo "rustup is already installed: $(rustup --version)"
+  else
+    echo "rustup not found. Installing globally..."
+    # Make available to all users
+    sudo mkdir -p /usr/local/rustup
+    sudo mkdir -p /usr/local/cargo
+    sudo groupadd rustdev
+    sudo usermod -aG rustdev root
+    sudo usermod -aG rustdev ubuntu
+    sudo chown -R root:rustdev /usr/local/cargo
+    sudo chown -R root:rustdev /usr/local/rustup
+    sudo chmod -R g+w /usr/local/cargo
+    sudo chmod -R g+w /usr/local/rustup
+    source backend/rust.sh
+    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sudo -i sh -s -- -y
+    sudo mv backend/rust.sh /etc/profile.d/rust.sh
+    echo "Installation complete."
+  fi  
   sudo cp $PROD_HOME/backend/fartracker.service /etc/systemd/system/
   sudo mkdir -p /var/log/fartracker
   sudo chown ubuntu:ubuntu /var/log/fartracker

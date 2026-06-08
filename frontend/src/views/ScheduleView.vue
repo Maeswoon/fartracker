@@ -8,7 +8,7 @@ import ScheduleLane from '@/components/ScheduleLane.vue'
 const auth = useAuthStore()
 const isAdmin = computed(() => !!auth.user?.is_admin)
 
-const { lanes, connected, lastUpdate, salvoTimerStarted, error, moveTeam, recallAll, updateTeamField } = useSchedule(isAdmin)
+const { lanes, connected, lastUpdate, salvoTimerStarted, error, moveTeam, recallAll, updateTeamField, setTimerYjs } = useSchedule(isAdmin)
 
 const pollLive = computed(() => lastUpdate.value !== null && Date.now() - lastUpdate.value < 30_000)
 
@@ -28,12 +28,14 @@ async function startTimer() {
   if (!window.confirm('Start salvo timer?')) return
   const data = await postSalvoTimer('start')
   salvoTimerStarted.value = data.salvo_timer_started
+  setTimerYjs(data.salvo_timer_started)
 }
 
 async function clearTimer() {
   if (!window.confirm('Clear salvo timer?')) return
   await postSalvoTimer('clear')
   salvoTimerStarted.value = null
+  setTimerYjs(null)
 }
 
 const teamMinSlots = computed(() => {

@@ -63,8 +63,16 @@ export const postRecoveryPiece = (team: string, object_name: string, lat: number
   api.post(`/team_tracking/teams/${team}/recovery`, { object_name, lat, lon }).then(r => r.data)
 export const deleteRecoveryPiece = (team: string, pieceId: number) =>
   api.delete(`/team_tracking/teams/${team}/recovery/${pieceId}`).then(r => r.data)
+export const patchRecoveryPiece = (team: string, pieceId: number, data: Record<string, any>) =>
+  api.patch(`/team_tracking/teams/${team}/recovery/${pieceId}`, data).then(r => r.data)
 export const postRecoveryPath = (team: string, lat: number, lon: number) =>
   api.post(`/team_tracking/teams/${team}/recovery/path`, { lat, lon }).then(r => r.data)
+export const getTeamRecoveryPath = (team: string) =>
+  api.get(`/team_tracking/teams/${team}/recovery/path`).then(r => r.data)
+export const putTeamRecoveryPath = (team: string, coords: { lat: number; lon: number }[]) =>
+  api.put(`/team_tracking/teams/${team}/recovery/path`, { coords }).then(r => r.data)
+export const deleteRecoveryPathPoint = (team: string, index: number) =>
+  api.delete(`/team_tracking/teams/${team}/recovery/path/${index}`).then(r => r.data)
 
 export const getSchedule = () =>
   api.get<SalvoScheduleResponse>('/team_tracking/schedule').then(r => r.data)

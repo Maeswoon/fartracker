@@ -62,6 +62,13 @@ export function useSchedule(isAdmin: Ref<boolean>) {
     if (!ydoc) return
     const yTeams = ydoc.getMap('teams')
     const yLanes = ydoc.getMap('lanes')
+    const ySchedule = ydoc.getMap('schedule')
+
+    // Timer state from Yjs
+    const timerVal = ySchedule.get('salvo_timer_started')
+    if (timerVal !== undefined) {
+      salvoTimerStarted.value = (typeof timerVal === 'string' && timerVal) ? timerVal : null
+    }
 
     const meta: Record<string, Record<string, number>> = {}
     yTeams.forEach((val, key) => {
@@ -84,6 +91,12 @@ export function useSchedule(isAdmin: Ref<boolean>) {
     lanes.value = newLanes
     teamMap.value = newMap
     lastUpdate.value = Date.now()
+  }
+
+  function setTimerYjs(value: string | null) {
+    if (!ydoc) return
+    const ySchedule = ydoc.getMap('schedule')
+    ySchedule.set('salvo_timer_started', value || '')
   }
 
   function getTeamMeta(teamId: string): Y.Map<any> {
@@ -310,5 +323,5 @@ export function useSchedule(isAdmin: Ref<boolean>) {
     if (ydoc) ydoc.destroy()
   })
 
-  return { lanes, teamMap, connected, lastUpdate, salvoTimerStarted, error, moveTeam, recallAll, updateTeamField, start }
+  return { lanes, teamMap, connected, lastUpdate, salvoTimerStarted, error, moveTeam, recallAll, updateTeamField, setTimerYjs, start }
 }

@@ -9,6 +9,7 @@ urlpatterns = [
     path("teams/<str:team_id>", views.TeamDetailedView.as_view(), name="team_details"),
     path("teams/<str:team_id>/status", views.TeamStatusView.as_view(), name="team_statuses"),
     path("teams/<str:team_id>/recovery/path", views.update_team_recovery_path, name="path"),
+    path("teams/<str:team_id>/recovery/path/<int:index>", views.delete_recovery_path_point, name="delete_path_point"),
     path("teams/<str:team_id>/recovery", views.RecoveryPieceView.as_view(), name="recovery_piece"),
     path("teams/<str:team_id>/recovery/<int:piece_id>", views.delete_recovery_piece, name="delete_recovery_piece"),
     path("recovery", views.AllRecoveryPiecesView.as_view(), name="recovery"),

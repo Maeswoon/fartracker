@@ -85,13 +85,15 @@ class ScheduleConsumer(YroomConsumer):
 
     _pending_lanes: dict | None = None
     _pending_teams: dict | None = None
+    _pending_schedule: dict | None = None
 
     async def _sync_lanes_to_db(self):
         await asyncio.sleep(2)
         room_settings = get_room_settings(self.room_name)
         self._pending_lanes = None
         self._pending_teams = None
-        for map_name in ('lanes', 'teams'):
+        self._pending_schedule = None
+        for map_name in ('lanes', 'teams', 'schedule'):
             await self.channel_layer.send(
                 room_settings['CHANNEL_NAME'],
                 {
@@ -112,25 +114,31 @@ class ScheduleConsumer(YroomConsumer):
         if isinstance(data, str):
             data = json.loads(data)
         # Determine which map this response is for by checking keys
-        # lanes map has lane_id -> [team_ids], teams map has team_id -> {fields}
+        # lanes map has lane_id -> [team_ids], teams map has team_id -> {fields},
+        # schedule map has string keys -> string values
         if any(isinstance(v, list) for v in data.values()):
             self._pending_lanes = data
-        else:
+        elif any(isinstance(v, dict) for v in data.values()):
             self._pending_teams = data
-        # Save when both are available
-        if self._pending_lanes is not None and self._pending_teams is not None:
-            await sync_to_async(_save_lanes)(self._pending_lanes, self._pending_teams)
+        else:
+            self._pending_schedule = data
+        # Save when all are available
+        if self._pending_lanes is not None and self._pending_teams is not None and self._pending_schedule is not None:
+            await sync_to_async(_save_lanes)(self._pending_lanes, self._pending_teams, self._pending_schedule)
 
-def _save_lanes(lanes_data, team_data=None):
+def _save_lanes(lanes_data, team_data=None, schedule_data=None):
     import json
 
     from .models import SalvoSchedule
     from .views import DEFAULT_LANE_DEFINITIONS
+    from django.utils import dateparse
 
     if isinstance(lanes_data, str):
         lanes_data = json.loads(lanes_data)
     if isinstance(team_data, str):
         team_data = json.loads(team_data)
+    if isinstance(schedule_data, str):
+        schedule_data = json.loads(schedule_data)
 
     schedule, _ = SalvoSchedule.objects.get_or_create(pk=1)
 
@@ -144,4 +152,11 @@ def _save_lanes(lanes_data, team_data=None):
     schedule.lane_teams = lanes_data
     if team_data is not None:
         schedule.team_data = team_data
+    if isinstance(schedule_data, dict):
+        timer_val = schedule_data.get('salvo_timer_started')
+        if timer_val and isinstance(timer_val, str):
+            schedule.salvo_timer_started = dateparse.parse_datetime(timer_val)
+        else:
+            # empty string or missing means cleared
+            schedule.salvo_timer_started = None
     schedule.save()

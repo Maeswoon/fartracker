@@ -3,15 +3,14 @@ import { ref, onMounted } from 'vue'
 import { getTeamsAbbreviated } from '@/api'
 import type { Team } from '@/types'
 import SiteStatusForm from '@/components/SiteStatusForm.vue'
-import RecoveryPathForm from '@/components/RecoveryPathForm.vue'
-import RecoveryPieceForm from '@/components/RecoveryPieceForm.vue'
-import DeleteRecoveryPieceForm from '@/components/DeleteRecoveryPieceForm.vue'
+import RecoveryPathManager from '@/components/RecoveryPathManager.vue'
+import RecoveryPieceManager from '@/components/RecoveryPieceManager.vue'
 import TeamStatusForm from '@/components/TeamStatusForm.vue'
 import TeamFrequenciesForm from '@/components/TeamFrequenciesForm.vue'
 import TeamForm from '@/components/TeamForm.vue'
 
 const teamOptions = ref<Team[]>([])
-const deleteFormRef = ref<InstanceType<typeof DeleteRecoveryPieceForm> | null>(null)
+const pathManagerRef = ref<InstanceType<typeof RecoveryPathManager> | null>(null)
 
 onMounted(async () => {
   try {
@@ -28,21 +27,14 @@ async function refreshTeams() {
     console.error('Failed to load teams')
   }
 }
-
-function onPieceSubmitted(_teamId: string) {
-  if (deleteFormRef.value) {
-    deleteFormRef.value.refresh()
-  }
-}
 </script>
 
 <template>
   <h1>Admin</h1>
   <div class="dashboard-container">
     <SiteStatusForm />
-    <RecoveryPathForm :teams="teamOptions" />
-    <RecoveryPieceForm :teams="teamOptions" @submitted="onPieceSubmitted" />
-    <DeleteRecoveryPieceForm ref="deleteFormRef" :teams="teamOptions" />
+    <RecoveryPathManager ref="pathManagerRef" :teams="teamOptions" />
+    <RecoveryPieceManager :teams="teamOptions" @path-added="pathManagerRef?.refresh()" @updated="pathManagerRef?.refresh()" />
     <TeamStatusForm :teams="teamOptions" />
     <TeamFrequenciesForm :teams="teamOptions" />
     <TeamForm :teams="teamOptions" @updated="refreshTeams" />
@@ -65,6 +57,10 @@ function onPieceSubmitted(_teamId: string) {
 
 .dashboard-container :deep(.form-card:not(.form-card--wide)) {
   max-width: 260px;
+}
+
+.dashboard-container :deep(.form-card--wide) {
+  max-width: 480px;
 }
 
 .dashboard-container :deep(.form-card h3) {

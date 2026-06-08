@@ -6,8 +6,14 @@ import { Threebox } from 'threebox-plugin'
 import * as togeojson from '@mapbox/togeojson'
 import { getMapboxToken, getTrajectoryWsUrl } from '@/config'
 import { getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
+import { useAuthStore } from '@/stores/auth'
 import type { Team, RecoveryPiece, RecoveryPath } from '@/types'
+import RecoveryPathManager from '@/components/RecoveryPathManager.vue'
+import RecoveryPieceManager from '@/components/RecoveryPieceManager.vue'
 import 'mapbox-gl/dist/mapbox-gl.css'
+
+const auth = useAuthStore()
+const isAdmin = computed(() => !!auth.user?.is_admin)
 
 const allTeams = ref<Team[]>([])
 const allPieces = ref<RecoveryPiece[]>([])
@@ -35,7 +41,7 @@ const recoveryTeamIds = computed(() => {
 })
 
 const teams = computed(() =>
-  allTeams.value.filter(t => t.status === 'IR')
+  allTeams.value.filter(t => t.status === 'Recovering' || t.status === 'Recovered')
 )
 
 const filterableTeams = computed(() => {
@@ -75,7 +81,8 @@ function updatePieceSource() {
 function updatePathSource() {
   const pathSource = map?.getSource('paths') as mapboxgl.GeoJSONSource | undefined
   const dashSource = map?.getSource('path-dashes') as mapboxgl.GeoJSONSource | undefined
-  if (!pathSource || !dashSource) return
+  const vertexSource = map?.getSource('path-vertices') as mapboxgl.GeoJSONSource | undefined
+  if (!pathSource || !dashSource || !vertexSource) return
 
   const recoveringIds = new Set(teams.value.map(t => t.team_identifier))
   const filtered = selectedTeamFilter.value
@@ -84,6 +91,7 @@ function updatePathSource() {
 
   const pathFeatures: Feature[] = []
   const dashedFeatures: Feature[] = []
+  const vertexFeatures: Feature[] = []
   for (const team of filtered) {
     if (!team.coords.length) continue
     const path = team.coords.map(c => [Number(c.lon), Number(c.lat)] as [number, number])
@@ -98,9 +106,17 @@ function updatePathSource() {
       geometry: { type: 'Point', coordinates: last },
       properties: { label: `${team.name}\nCURRENT LOCATION` },
     })
+    for (let i = 0; i < path.length - 1; i++) {
+      vertexFeatures.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: path[i] },
+        properties: { label: `${team.name} (#${i + 1})` },
+      })
+    }
   }
   pathSource.setData({ type: 'FeatureCollection', features: pathFeatures })
   dashSource.setData({ type: 'FeatureCollection', features: dashedFeatures })
+  vertexSource.setData({ type: 'FeatureCollection', features: vertexFeatures })
 }
 
 function updateTrajectoryDisplay() {
@@ -124,6 +140,7 @@ function updateLayerVisibility() {
     map!.setLayoutProperty('path-lines', 'visibility', v)
     map!.setLayoutProperty('path-last-point', 'visibility', v)
     map!.setLayoutProperty('path-last-point-label', 'visibility', v)
+    map!.setLayoutProperty('path-vertices-circles', 'visibility', v)
   }
 }
 
@@ -255,6 +272,7 @@ onMounted(async () => {
         map!.addSource('recovery-pieces', { type: 'geojson', data: empty })
         map!.addSource('paths', { type: 'geojson', data: empty })
         map!.addSource('path-dashes', { type: 'geojson', data: empty })
+        map!.addSource('path-vertices', { type: 'geojson', data: empty })
         map!.addSource('trajectories', { type: 'geojson', data: empty })
 
         map!.addLayer({
@@ -304,6 +322,12 @@ onMounted(async () => {
           paint: { 'text-color': '#00FF00', 'text-halo-color': '#000', 'text-halo-width': 1 },
         })
         map!.addLayer({
+          id: 'path-vertices-circles',
+          type: 'circle',
+          source: 'path-vertices',
+          paint: { 'circle-radius': 4, 'circle-color': '#00BFFF', 'circle-stroke-color': '#000', 'circle-stroke-width': 1 },
+        })
+        map!.addLayer({
           id: 'trajectory-lines',
           type: 'custom',
           renderingMode: '3d',
@@ -312,6 +336,43 @@ onMounted(async () => {
             if (tb) tb.update()
           },
         })
+
+        // Click-to-popup on recovery pieces
+        map!.on('click', 'recovery-pieces-circles', (e) => {
+          if (!e.features?.length) return
+          const f = e.features[0]
+          const coords = (f.geometry as any).coordinates as [number, number]
+          new mapboxgl.Popup()
+            .setLngLat(coords)
+            .setHTML(`<strong>${f.properties?.name || ''}</strong><br>${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`)
+            .addTo(map!)
+        })
+        map!.on('mouseenter', 'recovery-pieces-circles', () => { map!.getCanvas().style.cursor = 'pointer' })
+        map!.on('mouseleave', 'recovery-pieces-circles', () => { map!.getCanvas().style.cursor = '' })
+
+        map!.on('click', 'path-last-point', (e) => {
+          if (!e.features?.length) return
+          const f = e.features[0]
+          const coords = (f.geometry as any).coordinates as [number, number]
+          new mapboxgl.Popup()
+            .setLngLat(coords)
+            .setHTML(`<strong>${f.properties?.label || ''}</strong><br>${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`)
+            .addTo(map!)
+        })
+        map!.on('mouseenter', 'path-last-point', () => { map!.getCanvas().style.cursor = 'pointer' })
+        map!.on('mouseleave', 'path-last-point', () => { map!.getCanvas().style.cursor = '' })
+
+        map!.on('click', 'path-vertices-circles', (e) => {
+          if (!e.features?.length) return
+          const f = e.features[0]
+          const coords = (f.geometry as any).coordinates as [number, number]
+          new mapboxgl.Popup()
+            .setLngLat(coords)
+            .setHTML(`<strong>${f.properties?.label || ''}</strong><br>${coords[1].toFixed(5)}, ${coords[0].toFixed(5)}`)
+            .addTo(map!)
+        })
+        map!.on('mouseenter', 'path-vertices-circles', () => { map!.getCanvas().style.cursor = 'pointer' })
+        map!.on('mouseleave', 'path-vertices-circles', () => { map!.getCanvas().style.cursor = '' })
       })
       .then(syncDisplay)
       .catch(err => console.error('Error loading KML:', err))
@@ -406,6 +467,10 @@ onUnmounted(() => {
             <span class="toggle-slider"></span>
           </label>
         </div>
+        <template v-if="isAdmin">
+          <RecoveryPathManager :teams="allTeams" @updated="fetchTeams" />
+          <RecoveryPieceManager :teams="allTeams" @updated="fetchTeams" />
+        </template>
         <p v-if="teams.length === 0">No teams are presently out for recovery.</p>
         <div v-else class="table-wrapper">
           <table>
@@ -444,6 +509,21 @@ onUnmounted(() => {
   min-height: 0;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.recovery-teams :deep(.form-card--wide) {
+  max-width: none;
+  margin-bottom: 16px;
+}
+.recovery-teams :deep(.form-card input),
+.recovery-teams :deep(.form-card select),
+.recovery-teams :deep(.form-card textarea) {
+  margin-bottom: 4px;
+  padding: 4px 6px;
+  font-size: 0.82rem;
+}
+.recovery-teams :deep(.form-card label) {
+  margin-bottom: 2px;
 }
 
 @media (max-width: 900px) {
@@ -485,6 +565,7 @@ onUnmounted(() => {
 }
 
 .display-options {
+  margin-bottom: 24px;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -533,4 +614,17 @@ onUnmounted(() => {
 .toggle-input:checked + .toggle-slider::after {
   transform: translateX(20px);
 }
+</style>
+
+<style>
+.mapboxgl-popup-content {
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.85rem;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.mapboxgl-popup-tip { border-top-color: var(--color-surface) !important; }
+.mapboxgl-popup-close-button { color: var(--color-text-muted); }
 </style>
