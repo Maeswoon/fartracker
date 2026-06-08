@@ -159,9 +159,9 @@ function handleSubmit() {
 
 .mode-toggle button {
   flex: 1;
-  background-color: #e0e0e0;
-  color: var(--color-text-on-light);
-  border: 1px solid #ccc;
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
 }
 
 .mode-toggle button.active {

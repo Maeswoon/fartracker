@@ -59,13 +59,14 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 
 <style scoped>
 .team-card {
-  --card-muted: #888;
-  background: var(--color-surface);
+  --card-muted: var(--color-text-muted);
+  background: var(--color-card);
   border-radius: 6px;
   padding: 5px 8px;
+  border: 1px solid var(--color-border);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  color: var(--color-text-on-light);
-  font-size: 0.9rem;
+  color: var(--color-text);
+  font-size: 0.95rem;
 }
 
 .team-card.is-draggable {
@@ -88,7 +89,7 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 }
 
 .engine-badge {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 600;
   padding: 1px 6px;
   border-radius: 6px;
@@ -101,7 +102,7 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 }
 
 .team-meta {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: var(--card-muted);
   margin-top: 1px;
 }
@@ -114,7 +115,7 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 }
 
 .timing-field {
-  font-size: 0.7rem;
+  font-size: 0.74rem;
   color: var(--card-muted);
   display: flex;
   align-items: center;

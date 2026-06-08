@@ -186,11 +186,15 @@ function confirmRecall() {
 .lane {
   display: flex;
   flex-direction: column;
-  min-width: 220px;
-  max-width: 260px;
-  flex-shrink: 0;
-  background: #3a3a3a;
-  border-radius: 8px;
+  flex: 1 1 0;
+  min-width: 200px;
+  background: var(--color-surface);
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  transition: box-shadow 0.3s ease;
+}
+.lane:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
 }
 
 .lane-header {
@@ -199,49 +203,56 @@ function confirmRecall() {
   align-items: center;
   padding: 8px 12px;
   background: var(--color-nav-bg);
-  border-bottom: 2px solid var(--color-accent-red);
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 10px 10px 0 0;
+  border-radius: 10px 10px 0 0;
 }
 
-.lane-label { font-weight: 600; font-size: 0.85rem; color: var(--color-text); }
+.lane-label { font-weight: 600; font-size: 0.95rem; color: var(--color-text); }
 
 .sort-btn {
-  background: none; border: 1px solid #555; color: #aaa;
-  border-radius: 4px; cursor: pointer; font-size: 0.8rem;
-  padding: 1px 6px; margin-left: auto; margin-right: 6px;
+  background: none; border: 1px solid var(--color-border); color: var(--color-text-muted);
+  border-radius: 4px; cursor: pointer; font-size: 0.9rem;
+  padding: 2px 8px; margin-left: auto; margin-right: 6px;
+  transition: all 0.2s ease;
 }
 .sort-btn:hover { color: var(--color-accent-orange); border-color: var(--color-accent-orange); }
 
 .recall-btn {
-  background: none; border: 1px solid #555; color: #aaa;
-  border-radius: 4px; cursor: pointer; font-size: 0.7rem;
-  padding: 1px 8px; margin-left: auto; margin-right: 6px;
+  background: none; border: 1px solid var(--color-border); color: var(--color-text-muted);
+  border-radius: 4px; cursor: pointer; font-size: 0.85rem;
+  padding: 2px 8px; margin-left: auto; margin-right: 6px;
+  transition: all 0.2s ease;
 }
 .recall-btn:hover { color: var(--color-accent-red); border-color: var(--color-accent-red); }
 
 .lane-count {
-  background: var(--color-accent-red); color: #fff;
-  border-radius: 12px; padding: 1px 8px; font-size: 0.75rem; font-weight: 600;
+  background: rgba(192, 57, 43, 0.85); color: #fff;
+  border-radius: 10px; padding: 1px 8px; font-size: 0.7rem; font-weight: 600;
+  backdrop-filter: blur(4px);
 }
 
 .lane-body {
-  flex: 1; min-height: 60px; padding: 8px;
-  display: flex; flex-direction: column; gap: 6px;
+  flex: 1; min-height: 60px; padding: 6px;
+  display: flex; flex-direction: column; gap: 4px;
 }
 
 /* ── Slot grid ── */
-.salvo-lane { min-width: 240px; max-width: 280px; }
+.salvo-lane { min-width: 220px; }
 .slot-grid { gap: 0; padding: 2px; overflow-y: auto; }
 
 .slot-row {
   display: flex; align-items: center;
-  border-bottom: 1px solid #3f3f3f;
+  border-bottom: 1px solid var(--color-border);
   min-height: 24px;
+  transition: background 0.15s ease;
 }
+.slot-row:hover { background: var(--color-table-stripe); }
 .slot-row.occupied { min-height: 0; }
 
 .slot-label {
   width: 30px; flex-shrink: 0;
-  font-size: 0.6rem; color: #999;
+  font-size: 0.7rem; color: var(--color-text-muted);
   text-align: right; padding-right: 4px;
 }
 
@@ -250,15 +261,12 @@ function confirmRecall() {
   padding: 1px 2px;
 }
 
-:deep(.drop-placeholder) { background: var(--color-accent-red); opacity: 0.25; border-radius: 4px; min-height: 30px; }
+:deep(.drop-placeholder) { background: var(--color-accent-red); opacity: 0.25; border-radius: 4px; min-height: 30px; transition: opacity 0.15s ease; }
 :deep(.drag-original) { opacity: 0.3; }
 </style>
 
 <style>
 .drag-floating {
-  opacity: 0.92;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-  transform: rotate(2deg);
-  cursor: grabbing;
+  display: none;
 }
 </style>

@@ -22,7 +22,10 @@ function logout() {
 
 <template>
   <nav>
-    <RouterLink to="/" class="brand">FAR Tracker</RouterLink>
+    <RouterLink to="/" class="brand">
+      <img src="/logo.png" alt="" class="brand-logo" />
+      <span class="brand-text">FAR Tracker</span>
+    </RouterLink>
     <button
       class="hamburger"
       :class="{ open }"
@@ -64,17 +67,29 @@ nav {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.5rem;
-  background-color: var(--color-nav-bg);
-  border-bottom: 1px solid var(--color-nav-border);
+  padding: 0.6rem 1.5rem;
+  background: var(--color-nav-bg);
+  border-bottom: 1px solid var(--color-border);
   position: relative;
+  z-index: 100;
 }
 
 .brand {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: white;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   text-decoration: none;
+}
+.brand-logo {
+  height: 30px;
+  width: auto;
+}
+.brand-text {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: 1px;
 }
 
 .links {
@@ -84,9 +99,27 @@ nav {
 }
 
 .links a {
-  color: #ccc;
+  color: var(--color-text);
   font-size: 1rem;
   text-decoration: none;
+  position: relative;
+  transition: color 0.2s ease;
+}
+.links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: var(--color-border);
+  border-radius: 1px;
+  transition: background 0.2s ease, height 0.2s ease;
+}
+.links a:hover::after,
+.links a.router-link-active::after {
+  height: 2px;
+  background: var(--color-accent-orange);
 }
 
 .links a:hover,
@@ -96,12 +129,13 @@ nav {
 
 .links button {
   background: none;
-  border: 1px solid #ccc;
-  color: #ccc;
-  font-size: 1rem;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  font-size: 0.9rem;
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .links button:hover {
@@ -113,8 +147,8 @@ nav {
   display: none;
   flex-direction: column;
   justify-content: space-between;
-  width: 28px;
-  height: 22px;
+  width: 26px;
+  height: 20px;
   background: none;
   border: none;
   padding: 0;
@@ -123,24 +157,24 @@ nav {
 
 .hamburger span {
   display: block;
-  height: 3px;
+  height: 2px;
   width: 100%;
-  background-color: #ccc;
-  border-radius: 2px;
+  background-color: var(--color-text-muted);
+  border-radius: 1px;
   transform-origin: center;
   transition: transform 0.25s ease, opacity 0.2s ease, background-color 0.2s;
 }
 
 .hamburger:hover span { background-color: var(--color-accent-orange-lt); }
 
-.hamburger.open span:nth-child(1) { transform: translateY(9.5px) rotate(45deg); }
+.hamburger.open span:nth-child(1) { transform: translateY(9px) rotate(45deg); }
 .hamburger.open span:nth-child(2) { opacity: 0; }
-.hamburger.open span:nth-child(3) { transform: translateY(-9.5px) rotate(-45deg); }
+.hamburger.open span:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
 
 .links-mobile { display: none; }
 
 @media (max-width: 600px) {
-  nav { padding: 0.6rem 1rem; }
+  nav { padding: 0.5rem 1rem; }
 
   .hamburger { display: flex; }
   .links-desktop { display: none; }
@@ -154,8 +188,8 @@ nav {
     flex-direction: column;
     align-items: stretch;
     gap: 0;
-    background-color: var(--color-nav-bg);
-    border-bottom: 1px solid var(--color-nav-border);
+    background: var(--color-nav-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     padding: 0.5rem 0;
     z-index: 50;
     overflow: hidden;
@@ -168,11 +202,12 @@ nav {
     border-left: 3px solid transparent;
     border-radius: 0;
     text-align: left;
-    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    font-size: 1rem;
+    transition: all 0.2s ease;
   }
 
   .links-mobile a.router-link-active {
-    background-color: rgba(245, 168, 87, 0.12);
+    background: rgba(245, 168, 87, 0.12);
     border-left-color: var(--color-accent-orange-lt);
     color: var(--color-accent-orange-lt);
   }

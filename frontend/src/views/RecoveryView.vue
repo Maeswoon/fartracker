@@ -382,7 +382,7 @@ onUnmounted(() => {
       <div v-else-if="teamsError">{{ teamsError }}</div>
       <template v-else>
         <div class="team-filter">
-          <label>Filter map</label>
+          <label>Filter teams</label>
           <select v-model="selectedTeamFilter">
             <option value="">All Teams</option>
             <option v-for="t in filterableTeams" :key="t.team_identifier" :value="t.team_identifier">{{ t.name }}</option>
@@ -435,13 +435,15 @@ onUnmounted(() => {
 }
 
 .recovery-teams {
-  flex: 0 0 35%;
+  flex: 0 0 25%;
   overflow-y: auto;
 }
 
 .recovery-map {
   flex: 1;
   min-height: 0;
+  border-radius: 8px;
+  overflow: hidden;
 }
 
 @media (max-width: 900px) {
@@ -478,8 +480,8 @@ onUnmounted(() => {
 }
 
 .team-filter select option {
-  background-color: white;
-  color: var(--color-text-on-light);
+  background-color: var(--color-input-bg);
+  color: var(--color-text);
 }
 
 .display-options {
@@ -507,7 +509,7 @@ onUnmounted(() => {
   width: 44px;
   height: 24px;
   flex-shrink: 0;
-  background: #555;
+  background: var(--color-toggle-off);
   border-radius: 12px;
   transition: background 0.2s;
 }

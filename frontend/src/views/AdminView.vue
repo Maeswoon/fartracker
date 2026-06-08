@@ -70,7 +70,9 @@ function onPieceSubmitted(_teamId: string) {
 .dashboard-container :deep(.form-card h3) {
   margin: 0 0 8px;
   font-size: 1.25rem;
-  padding: 4px 8px;
+  padding: 0 0 4px 0;
+  border-bottom: 2px solid var(--color-accent-red);
+  color: var(--color-text);
 }
 
 .dashboard-container :deep(.form-card label) {

@@ -84,6 +84,14 @@ function autoSortSalvo(laneId: string) {
     }
   }
 }
+
+const currentLaneIndex = ref(0)
+function prevLane() {
+  if (currentLaneIndex.value > 0) currentLaneIndex.value--
+}
+function nextLane() {
+  if (currentLaneIndex.value < lanes.value.length - 1) currentLaneIndex.value++
+}
 </script>
 
 <template>
@@ -104,14 +112,20 @@ function autoSortSalvo(laneId: string) {
       </div>
     </div>
 
+    <div class="lanes-nav">
+      <button class="lane-arrow" :disabled="currentLaneIndex === 0" @click="prevLane">◀</button>
+      <span class="lane-nav-label">{{ lanes[currentLaneIndex]?.label }}</span>
+      <button class="lane-arrow" :disabled="currentLaneIndex >= lanes.length - 1" @click="nextLane">▶</button>
+    </div>
     <div class="lanes-container">
       <ScheduleLane
-        v-for="lane in lanes"
+        v-for="(lane, i) in lanes"
         :key="lane.id"
         :lane="lane"
         :draggable="isAdmin"
         :on-update-field="updateTeamField"
         :team-min-slots="teamMinSlots"
+        :class="{ 'lane-active': i === currentLaneIndex }"
         @change="(e) => onLaneChange(lane.id, e)"
         @auto-sort="autoSortSalvo(lane.id)"
         @recall-all="recallAll"
@@ -146,22 +160,26 @@ function autoSortSalvo(laneId: string) {
   border-radius: 12px;
   font-size: 0.8rem;
   font-weight: 600;
+  transition: background 0.3s ease, color 0.3s ease;
 }
 
 .badge-connected {
-  background: #28a745;
+  background: rgba(40, 167, 69, 0.85);
   color: #fff;
+  backdrop-filter: blur(4px);
 }
 
 .badge-disconnected {
-  background: #ffc107;
+  background: rgba(255, 193, 7, 0.85);
   color: #333;
+  backdrop-filter: blur(4px);
 }
 
 .badge-timer {
-  background: var(--color-accent-red);
+  background: rgba(192, 57, 43, 0.85);
   color: #fff;
   font-variant-numeric: tabular-nums;
+  backdrop-filter: blur(4px);
 }
 
 .timer-controls {
@@ -171,27 +189,25 @@ function autoSortSalvo(laneId: string) {
 
 .timer-btn {
   padding: 4px 12px;
-  border: 1px solid #555;
-  border-radius: 4px;
-  background: var(--color-nav-bg);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 5px;
+  background: rgba(17, 17, 17, 0.6);
   color: #ccc;
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
+  transition: all 0.2s ease;
 }
 .timer-btn:hover {
   border-color: var(--color-accent-orange);
   color: var(--color-accent-orange);
+  background: rgba(17, 17, 17, 0.8);
 }
 
-.timer-btn-clear {
-  border-color: transparent;
-  color: #888;
-}
-.timer-btn-clear:hover {
-  border-color: var(--color-accent-red);
-  color: var(--color-accent-red);
+
+.lanes-nav {
+  display: none;
 }
 
 .lanes-container {
@@ -201,5 +217,67 @@ function autoSortSalvo(laneId: string) {
   overflow-x: auto;
   padding-bottom: 12px;
   align-items: stretch;
+}
+
+@media (max-width: 768px) {
+  .schedule-header {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .schedule-header h1 {
+    width: 100%;
+  }
+  .schedule-status {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .timer-controls {
+    flex-direction: column;
+    align-items: flex-end;
+  }
+
+  .lanes-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .lane-arrow {
+    padding: 6px 14px;
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 6px;
+    background: rgba(17, 17, 17, 0.6);
+    color: #ccc;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .lane-arrow:disabled {
+    opacity: 0.3;
+    cursor: default;
+  }
+  .lane-arrow:not(:disabled):hover {
+    border-color: var(--color-accent-orange);
+    color: var(--color-accent-orange);
+  }
+  .lane-nav-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--color-text);
+    min-width: 100px;
+    text-align: center;
+  }
+  .lanes-container {
+    gap: 0;
+  }
+  .lanes-container :deep(.lane) {
+    display: none;
+    flex: 1;
+  }
+  .lanes-container :deep(.lane.lane-active) {
+    display: flex;
+  }
 }
 </style>
