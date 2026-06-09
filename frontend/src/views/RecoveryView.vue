@@ -24,6 +24,19 @@ const selectedTeamFilter = ref<string>('')
 const showPieces = ref(true)
 const showPaths = ref(false)
 const showTrajectories = ref(false)
+const isMobile = () => window.innerWidth <= 900
+const sidebarCollapsed = ref(isMobile())
+
+let wasMobile = isMobile()
+function onSidebarResize() {
+  const nowMobile = isMobile()
+  if (nowMobile !== wasMobile) {
+    sidebarCollapsed.value = nowMobile
+    wasMobile = nowMobile
+  }
+}
+onMounted(() => window.addEventListener('resize', onSidebarResize))
+onUnmounted(() => window.removeEventListener('resize', onSidebarResize))
 
 const trajectoryTeamIds = ref<Set<string>>(new Set())
 const recoveryTeamIds = computed(() => {
@@ -438,10 +451,11 @@ onUnmounted(() => {
 <template>
   <h1>Recovery</h1>
   <div class="recovery-layout">
-    <div class="recovery-teams">
-      <div v-if="loadingTeams">Loading...</div>
-      <div v-else-if="teamsError">{{ teamsError }}</div>
-      <template v-else>
+    <div class="recovery-teams" :class="{ collapsed: sidebarCollapsed }">
+      <div class="sidebar-body">
+        <div v-if="loadingTeams">Loading...</div>
+        <div v-else-if="teamsError">{{ teamsError }}</div>
+        <template v-else>
         <div class="team-filter">
           <label>Filter teams</label>
           <select v-model="selectedTeamFilter">
@@ -485,7 +499,15 @@ onUnmounted(() => {
           </table>
         </div>
       </template>
+      </div>
     </div>
+    <button
+      class="sidebar-toggle"
+      :aria-label="sidebarCollapsed ? 'Expand options' : 'Collapse options'"
+      @click="sidebarCollapsed = !sidebarCollapsed"
+    >
+      <span class="toggle-label">Options</span>
+    </button>
     <div ref="mapContainer" class="recovery-map" />
   </div>
 </template>
@@ -494,14 +516,69 @@ onUnmounted(() => {
 .recovery-layout {
   display: flex;
   flex-direction: row;
-  gap: 20px;
+  gap: 0;
   align-items: stretch;
   height: calc(100vh - 16rem);
 }
 
 .recovery-teams {
-  flex: 0 0 25%;
+  display: grid;
+  grid-template-columns: 1fr;
+  min-width: 400px;
+  max-width: 800px;
+  transition: grid-template-columns 0.3s ease, min-width 0.3s ease, max-width 0.3s ease, opacity 0.25s ease;
+}
+
+.sidebar-body {
   overflow-y: auto;
+  overflow-x: hidden;
+  min-width: 0;
+}
+
+.recovery-teams.collapsed {
+  grid-template-columns: 0fr;
+  min-width: 0;
+  max-width: 0;
+  opacity: 0;
+}
+
+.sidebar-toggle {
+  flex: 0 0 20px;
+  align-self: stretch;
+  padding: 0;
+  margin: 0 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface-alt);
+  border: none;
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.sidebar-toggle:hover {
+  color: var(--color-accent-red-lt);
+}
+.toggle-label {
+  display: none;
+}
+.sidebar-toggle::after {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-left: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  margin-right: -2px;
+  transition: transform 0.3s ease, margin 0.3s ease;
+}
+/* collapsed: chevron points right */
+.recovery-teams.collapsed ~ .sidebar-toggle::after {
+  transform: rotate(-135deg);
+  margin-right: 0;
+  margin-left: -2px;
 }
 
 .recovery-map {
@@ -533,12 +610,50 @@ onUnmounted(() => {
   }
 
   .recovery-teams {
-    flex: 1 1 auto;
-    max-height: 40vh;
+    display: grid;
+    grid-template-rows: 1fr;
+    min-width: 0;
+    max-width: none;
+    transition: grid-template-rows 0.3s ease, opacity 0.25s ease;
+  }
+
+  .sidebar-body {
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+  }
+
+  .recovery-teams.collapsed {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
+
+  /* vertical mode: thin horizontal strip */
+  .sidebar-toggle {
+    flex: 0 0 24px;
+    width: 100%;
+    margin: 4px 0;
+    padding: 0 8px;
+    justify-content: space-between;
+  }
+  .toggle-label {
+    display: inline;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--color-text-muted);
+  }
+  .sidebar-toggle::after {
+    transform: rotate(135deg);
+    margin: 0;
+  }
+  .recovery-teams.collapsed ~ .sidebar-toggle::after {
+    transform: rotate(-45deg);
+    margin: 0;
   }
 
   .recovery-map {
-    min-height: 50vh;
+    min-height: 60vh;
+    border-radius: 0;
   }
 }
 
@@ -552,11 +667,16 @@ onUnmounted(() => {
 
 .team-filter select {
   flex: 1;
+  min-width: 0;
+  max-width: 200px;
   padding: 4px 8px;
   border-radius: 4px;
   border: 1px solid #888;
   background-color: transparent;
   color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .team-filter select option {

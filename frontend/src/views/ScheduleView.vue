@@ -185,9 +185,9 @@ onUnmounted(() => {
     </div>
 
     <div v-if="lanesPerView < lanes.length" class="lanes-nav">
-      <button class="lane-arrow" :class="{ 'arrow-hot': edgeZone === 'left' && currentLaneIndex > 0 }" :disabled="currentLaneIndex === 0" @click="prevLane">◀</button>
+      <button class="lane-arrow prev" :class="{ 'arrow-hot': edgeZone === 'left' && currentLaneIndex > 0 }" :disabled="currentLaneIndex === 0" aria-label="Previous lane" @click="prevLane" />
       <span class="lane-nav-label">{{ lanes[currentLaneIndex]?.label }}</span>
-      <button class="lane-arrow" :class="{ 'arrow-hot': edgeZone === 'right' && currentLaneIndex < maxLaneIndex }" :disabled="currentLaneIndex >= maxLaneIndex" @click="nextLane">▶</button>
+      <button class="lane-arrow next" :class="{ 'arrow-hot': edgeZone === 'right' && currentLaneIndex < maxLaneIndex }" :disabled="currentLaneIndex >= maxLaneIndex" aria-label="Next lane" @click="nextLane" />
     </div>
     <div class="lanes-container" :class="{ 'lanes-paginated': lanesPerView < lanes.length }">
       <ScheduleLane
@@ -289,15 +289,38 @@ onUnmounted(() => {
 }
 .lane-arrow {
   width: 44px;
-  padding: 6px 0;
-  text-align: center;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: 6px;
   background: rgba(17, 17, 17, 0.6);
   color: #ccc;
-  font-size: 1rem;
   cursor: pointer;
   transition: all 0.2s ease;
+}
+.lane-arrow::after {
+  content: '';
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-color: currentColor;
+  border-style: solid;
+  border-width: 0;
+}
+.lane-arrow.prev::after {
+  border-left-width: 2px;
+  border-bottom-width: 2px;
+  transform: rotate(45deg);
+  margin-right: -3px;
+}
+.lane-arrow.next::after {
+  border-top-width: 2px;
+  border-right-width: 2px;
+  transform: rotate(45deg);
+  margin-left: -3px;
 }
 .lane-arrow:disabled {
   opacity: 0.3;

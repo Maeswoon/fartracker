@@ -173,7 +173,7 @@ nav {
 
 .links-mobile { display: none; }
 
-@media (max-width: 600px) {
+@media (max-width: 750px) {
   nav { padding: 0.5rem 1rem; }
 
   .hamburger { display: flex; }
