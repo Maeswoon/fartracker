@@ -167,29 +167,29 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="schedule-view">
-    <div class="schedule-header">
-      <h1>Launch Schedule</h1>
-      <div class="schedule-status">
-        <span v-if="isAdmin && connected" class="badge badge-connected">Editing Live</span>
-        <span v-else-if="isAdmin" class="badge badge-disconnected">Connecting...</span>
-        <span v-else-if="error" class="badge badge-disconnected">{{ error }}</span>
-        <span v-else-if="pollLive" class="badge badge-connected">Live</span>
-        <span v-else class="badge badge-disconnected">Lost Connection</span>
-        <span v-if="timerDisplay" class="badge badge-timer">{{ timerDisplay }}</span>
+  <div class="px-5 pb-5">
+    <div class="flex items-center gap-4 max-[768px]:flex-wrap max-[768px]:justify-between max-[768px]:gap-2">
+      <h1 class="mb-0 max-[768px]:w-full">Launch Schedule</h1>
+      <div class="flex items-center gap-2 max-[768px]:flex-col max-[768px]:items-start">
+        <span v-if="isAdmin && connected" class="badge bg-(--color-success)/85 text-white backdrop-blur-sm">Editing Live</span>
+        <span v-else-if="isAdmin" class="badge bg-(--color-warning)/85 text-(--color-warning-text) backdrop-blur-sm">Connecting...</span>
+        <span v-else-if="error" class="badge bg-(--color-warning)/85 text-(--color-warning-text) backdrop-blur-sm">{{ error }}</span>
+        <span v-else-if="pollLive" class="badge bg-(--color-success)/85 text-white backdrop-blur-sm">Live</span>
+        <span v-else class="badge bg-(--color-warning)/85 text-(--color-warning-text) backdrop-blur-sm">Lost Connection</span>
+        <span v-if="timerDisplay" class="badge bg-(--color-accent-red)/85 text-white tabular-nums backdrop-blur-sm">{{ timerDisplay }}</span>
       </div>
-      <div v-if="isAdmin" class="timer-controls">
+      <div v-if="isAdmin" class="flex gap-1.5 max-[768px]:flex-col max-[768px]:items-end">
         <button class="timer-btn" @click="startTimer">{{ salvoTimerStarted ? 'Reset' : 'Start' }} Timer</button>
-        <button v-if="salvoTimerStarted" class="timer-btn timer-btn-clear" @click="clearTimer">Clear Timer</button>
+        <button v-if="salvoTimerStarted" class="timer-btn" @click="clearTimer">Clear Timer</button>
       </div>
     </div>
 
-    <div v-if="lanesPerView < lanes.length" class="lanes-nav">
+    <div v-if="lanesPerView < lanes.length" class="flex items-center justify-center gap-3 mt-3">
       <button class="lane-arrow prev" :class="{ 'arrow-hot': edgeZone === 'left' && currentLaneIndex > 0 }" :disabled="currentLaneIndex === 0" aria-label="Previous lane" @click="prevLane" />
-      <span class="lane-nav-label">{{ lanes[currentLaneIndex]?.label }}</span>
+      <span class="font-semibold text-[0.95rem] text-(--color-text) w-[120px] text-center">{{ lanes[currentLaneIndex]?.label }}</span>
       <button class="lane-arrow next" :class="{ 'arrow-hot': edgeZone === 'right' && currentLaneIndex < maxLaneIndex }" :disabled="currentLaneIndex >= maxLaneIndex" aria-label="Next lane" @click="nextLane" />
     </div>
-    <div class="lanes-container" :class="{ 'lanes-paginated': lanesPerView < lanes.length }">
+    <div class="mt-4 flex gap-4 pb-3 items-stretch" :class="{ 'lanes-paginated': lanesPerView < lanes.length }">
       <ScheduleLane
         v-for="(lane, i) in lanes"
         :key="lane.id"
@@ -209,68 +209,19 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
-.schedule-view {
-  padding: 0 20px 20px;
-}
-
-.schedule-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.schedule-header h1 {
-  margin-bottom: 0;
-}
-
-.schedule-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+@reference "tailwindcss";
 
 .badge {
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-  font-weight: 600;
+  @apply py-1 px-3 rounded-xl text-xs font-semibold;
   transition: background 0.3s ease, color 0.3s ease;
 }
 
-.badge-connected {
-  background: rgba(40, 167, 69, 0.85);
-  color: #fff;
-  backdrop-filter: blur(4px);
-}
-
-.badge-disconnected {
-  background: rgba(255, 193, 7, 0.85);
-  color: #333;
-  backdrop-filter: blur(4px);
-}
-
-.badge-timer {
-  background: rgba(192, 57, 43, 0.85);
-  color: #fff;
-  font-variant-numeric: tabular-nums;
-  backdrop-filter: blur(4px);
-}
-
-.timer-controls {
-  display: flex;
-  gap: 6px;
-}
-
 .timer-btn {
-  padding: 4px 12px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  border-radius: 5px;
-  background: rgba(17, 17, 17, 0.6);
-  color: #ccc;
-  font-size: 0.8rem;
-  font-weight: 600;
-  cursor: pointer;
+  @apply py-1 px-3 border rounded-md text-xs font-semibold cursor-pointer;
   font-family: inherit;
+  background: rgba(17, 17, 17, 0.6);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #ccc;
   transition: all 0.2s ease;
 }
 .timer-btn:hover {
@@ -279,52 +230,30 @@ onUnmounted(() => {
   background: rgba(17, 17, 17, 0.8);
 }
 
-
-.lanes-nav {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 12px;
-  margin-top: 12px;
-}
 .lane-arrow {
-  width: 44px;
-  height: 34px;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 6px;
+  @apply w-11 h-[34px] flex items-center justify-center rounded-md cursor-pointer;
   background: rgba(17, 17, 17, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   color: #ccc;
-  cursor: pointer;
   transition: all 0.2s ease;
 }
 .lane-arrow::after {
   content: '';
-  display: block;
-  width: 9px;
-  height: 9px;
+  @apply block w-[9px] h-[9px] border-solid border-0;
   border-color: currentColor;
-  border-style: solid;
-  border-width: 0;
 }
 .lane-arrow.prev::after {
   border-left-width: 2px;
   border-bottom-width: 2px;
-  transform: rotate(45deg);
-  margin-right: -3px;
+  @apply rotate-45 -mr-0.5;
 }
 .lane-arrow.next::after {
   border-top-width: 2px;
   border-right-width: 2px;
-  transform: rotate(45deg);
-  margin-left: -3px;
+  @apply rotate-45 -ml-0.5;
 }
 .lane-arrow:disabled {
-  opacity: 0.3;
-  cursor: default;
+  @apply opacity-30 cursor-default;
 }
 .lane-arrow:not(:disabled):hover {
   border-color: var(--color-accent-red);
@@ -339,52 +268,14 @@ onUnmounted(() => {
   from { transform: scale(1); }
   to   { transform: scale(1.18); }
 }
-.lane-nav-label {
-  font-weight: 600;
-  font-size: 0.95rem;
-  color: var(--color-text);
-  width: 120px;
-  text-align: center;
-}
 
-.lanes-container {
-  margin-top: 16px;
-  display: flex;
-  gap: 16px;
-  overflow-x: auto;
-  padding-bottom: 12px;
-  align-items: stretch;
-}
-
-/* Paginated: only show lanes within the current window */
 .lanes-paginated {
-  gap: 8px;
-  overflow-x: visible;
+  @apply gap-2 overflow-visible;
 }
 .lanes-paginated :deep(.lane) {
-  display: none;
-  flex: 1;
+  @apply hidden flex-1;
 }
 .lanes-paginated :deep(.lane.lane-visible) {
-  display: flex;
-}
-
-@media (max-width: 768px) {
-  .schedule-header {
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 8px;
-  }
-  .schedule-header h1 {
-    width: 100%;
-  }
-  .schedule-status {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .timer-controls {
-    flex-direction: column;
-    align-items: flex-end;
-  }
+  @apply flex;
 }
 </style>

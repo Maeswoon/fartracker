@@ -18,48 +18,21 @@ const dir = (value: number, axis: 'lat' | 'lon') => {
 
 <template>
   <label v-if="!compact">
-    {{ label[axis] }} <span class="direction">({{ dir(modelValue, axis) }})</span>
+    {{ label[axis] }} <span class="text-xs text-(--color-text-muted)">({{ dir(modelValue, axis) }})</span>
     <input
       type="number" step="any" required
       :value="modelValue"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).valueAsNumber)"
     />
   </label>
-  <span v-else class="coord-inline">
+  <span v-else class="inline-flex items-center gap-0.5">
     <input
       type="number" step="any"
-      class="coord-input"
+      class="py-0.5 px-1 text-xs border border-(--color-border) rounded-sm bg-(--color-input-bg) text-(--color-text)" style="font-family:inherit;width:8ch;min-width:0;flex:none"
       :placeholder="short[axis]"
       :value="modelValue"
       @input="emit('update:modelValue', ($event.target as HTMLInputElement).valueAsNumber)"
     />
-    <span class="axis-hint">{{ dir(modelValue, axis) }}</span>
+    <span class="text-xs text-(--color-text-muted) w-[18px]">{{ dir(modelValue, axis) }}</span>
   </span>
 </template>
-
-<style scoped>
-.direction { font-size: 0.8rem; color: var(--color-text-muted); }
-
-.coord-inline {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-
-.coord-input {
-  width: 80px;
-  padding: 2px 4px;
-  font-size: 0.78rem;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  background: var(--color-input-bg);
-  color: var(--color-text);
-  font-family: inherit;
-}
-
-.axis-hint {
-  font-size: 0.78rem;
-  color: var(--color-text-muted);
-  width: 18px;
-}
-</style>

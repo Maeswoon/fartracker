@@ -77,22 +77,13 @@ onMounted(async () => {
 </template>
 
 <style scoped>
-.site-status-block {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
+@reference "tailwindcss";
 
-.site-status-block .as-of {
-  margin: 0.35rem 0 0;
-  font-size: 0.9rem;
-}
-
-.site-status-block h4 {
-  margin-bottom: 0.25rem;
-}
-
-.site-status-block p {
-  margin: 0;
+.site-status-block { @apply flex flex-col gap-3; }
+.site-status-block .as-of { @apply mt-[0.35rem] mb-0 text-sm; }
+.site-status-block h4 { @apply mb-1; }
+.site-status-block p { @apply m-0; }
+@media (max-width: 900px) {
+  .dashboard-container > :first-child { @apply self-center; }
 }
 </style>

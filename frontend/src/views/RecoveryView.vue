@@ -513,170 +513,113 @@ onUnmounted(() => {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .recovery-layout {
-  display: flex;
-  flex-direction: row;
-  gap: 0;
-  align-items: stretch;
+  @apply flex flex-row gap-0 items-stretch;
   height: calc(100vh - 16rem);
 }
 
 .recovery-teams {
-  display: grid;
+  @apply grid;
   grid-template-columns: 1fr;
-  min-width: 400px;
+  min-width: 300px;
   max-width: 800px;
   transition: grid-template-columns 0.3s ease, min-width 0.3s ease, max-width 0.3s ease, opacity 0.25s ease;
 }
 
 .sidebar-body {
-  overflow-y: auto;
-  overflow-x: hidden;
-  min-width: 0;
+  @apply overflow-y-auto overflow-x-hidden min-w-0;
 }
 
 .recovery-teams.collapsed {
   grid-template-columns: 0fr;
-  min-width: 0;
-  max-width: 0;
-  opacity: 0;
+  @apply min-w-0 max-w-0 opacity-0;
 }
 
 .sidebar-toggle {
-  flex: 0 0 20px;
+  @apply flex items-center justify-center p-0 mx-1.5 rounded border-none cursor-pointer shrink-0;
+  flex-basis: 20px;
   align-self: stretch;
-  padding: 0;
-  margin: 0 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--color-surface-alt);
-  border: none;
-  border-radius: 4px;
   color: var(--color-text-muted);
-  cursor: pointer;
   transition: color 0.2s ease, background 0.2s ease;
 }
-.sidebar-toggle:hover {
-  color: var(--color-accent-red-lt);
-}
-.toggle-label {
-  display: none;
-}
+.sidebar-toggle:hover { @apply text-(--color-accent-red-lt); }
+.toggle-label { @apply hidden; }
 .sidebar-toggle::after {
   content: '';
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-left: 2px solid currentColor;
-  border-bottom: 2px solid currentColor;
-  transform: rotate(45deg);
-  margin-right: -2px;
+  @apply block w-2 h-2 border-solid border-current border-0;
+  border-left-width: 2px;
+  border-bottom-width: 2px;
+  @apply rotate-45 -mr-0.5;
   transition: transform 0.3s ease, margin 0.3s ease;
 }
-/* collapsed: chevron points right */
 .recovery-teams.collapsed ~ .sidebar-toggle::after {
-  transform: rotate(-135deg);
-  margin-right: 0;
-  margin-left: -2px;
+  @apply -rotate-[135deg] mr-0 -ml-0.5;
 }
 
 .recovery-map {
-  flex: 1;
-  min-height: 0;
-  border-radius: 8px;
-  overflow: hidden;
+  @apply flex-1 min-h-0 rounded-lg overflow-hidden;
 }
 
 .recovery-teams :deep(.form-card--wide) {
-  max-width: none;
-  margin-bottom: 16px;
+  @apply max-w-none mb-4;
 }
 .recovery-teams :deep(.form-card input),
 .recovery-teams :deep(.form-card select),
 .recovery-teams :deep(.form-card textarea) {
-  margin-bottom: 4px;
-  padding: 4px 6px;
-  font-size: 0.82rem;
+  @apply mb-1 py-1 px-1.5 text-[0.82rem];
 }
-.recovery-teams :deep(.form-card label) {
-  margin-bottom: 2px;
-}
+.recovery-teams :deep(.form-card label) { @apply mb-0.5; }
 
 @media (max-width: 900px) {
   .recovery-layout {
-    flex-direction: column;
-    height: auto;
+    @apply flex-col h-auto;
   }
 
   .recovery-teams {
-    display: grid;
+    @apply min-w-0 max-w-none;
     grid-template-rows: 1fr;
-    min-width: 0;
-    max-width: none;
+    grid-template-columns: none;
     transition: grid-template-rows 0.3s ease, opacity 0.25s ease;
   }
 
   .sidebar-body {
-    overflow-y: auto;
-    overflow-x: hidden;
-    min-height: 0;
+    @apply overflow-y-auto overflow-x-hidden min-h-0;
   }
 
   .recovery-teams.collapsed {
     grid-template-rows: 0fr;
-    opacity: 0;
+    @apply opacity-0;
   }
 
-  /* vertical mode: thin horizontal strip */
   .sidebar-toggle {
-    flex: 0 0 24px;
-    width: 100%;
-    margin: 4px 0;
-    padding: 0 8px;
+    @apply w-full my-1 mx-0 px-2;
+    flex-basis: 24px;
     justify-content: space-between;
   }
   .toggle-label {
-    display: inline;
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--color-text-muted);
+    @apply inline text-xs font-semibold text-(--color-text-muted);
   }
   .sidebar-toggle::after {
-    transform: rotate(135deg);
-    margin: 0;
+    @apply rotate-[135deg] m-0;
   }
   .recovery-teams.collapsed ~ .sidebar-toggle::after {
-    transform: rotate(-45deg);
-    margin: 0;
+    @apply -rotate-45 m-0;
   }
 
   .recovery-map {
-    min-height: 60vh;
-    border-radius: 0;
+    @apply min-h-[60vh] rounded-none;
   }
 }
 
 .team-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-  color: var(--color-text);
+  @apply flex items-center gap-2 mb-3 text-(--color-text);
 }
 
 .team-filter select {
-  flex: 1;
-  min-width: 0;
-  max-width: 200px;
-  padding: 4px 8px;
-  border-radius: 4px;
-  border: 1px solid #888;
-  background-color: transparent;
-  color: var(--color-text);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  @apply flex-1 min-w-0 max-w-[200px] py-1 px-2 rounded border border-(--color-toggle-off) bg-transparent text-(--color-text) truncate;
 }
 
 .team-filter select option {
@@ -685,54 +628,30 @@ onUnmounted(() => {
 }
 
 .display-options {
-  margin-bottom: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-bottom: 12px;
+  @apply flex flex-col gap-2.5 mb-3;
 }
 
 .toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  cursor: pointer;
-  color: var(--color-text);
+  @apply flex items-center justify-between gap-3 cursor-pointer text-(--color-text);
 }
 
-.toggle-input {
-  display: none;
-}
+.toggle-input { @apply hidden; }
 
 .toggle-slider {
-  position: relative;
-  width: 44px;
-  height: 24px;
-  flex-shrink: 0;
+  @apply relative w-11 h-6 shrink-0 rounded-xl;
   background: var(--color-toggle-off);
-  border-radius: 12px;
   transition: background 0.2s;
 }
-
 .toggle-slider::after {
   content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 20px;
-  height: 20px;
-  background: white;
-  border-radius: 50%;
-  transition: transform 0.2s;
+  @apply absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full;
+  transition: translate 0.2s;
 }
-
 .toggle-input:checked + .toggle-slider {
   background: var(--color-accent-red);
 }
-
 .toggle-input:checked + .toggle-slider::after {
-  transform: translateX(20px);
+  @apply translate-x-5;
 }
 </style>
 

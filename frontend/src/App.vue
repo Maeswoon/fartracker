@@ -22,24 +22,11 @@ onMounted(() => auth.restoreSession())
 </template>
 
 <style scoped>
-.layout {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-}
+@reference "tailwindcss";
 
-.content {
-  flex-grow: 1;
-  padding: 1rem 2rem;
-  width: 100%;
-  max-width: 100%;
-  overflow-y: auto;
-}
-
+.layout { @apply min-h-screen flex flex-col w-full; }
+.content { @apply flex-grow py-4 px-8 w-full max-w-full overflow-y-auto; }
 @media (max-width: 600px) {
-  .content {
-    padding: 0.75rem 1rem;
-  }
+  .content { @apply py-3 px-4; }
 }
 </style>

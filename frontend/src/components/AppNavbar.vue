@@ -21,10 +21,10 @@ function logout() {
 </script>
 
 <template>
-  <nav>
-    <RouterLink to="/" class="brand">
-      <img src="/logo.png" alt="" class="brand-logo" />
-      <span class="brand-text">FAR Tracker</span>
+  <nav class="flex items-center justify-between px-6 py-2.5 bg-(--color-nav-bg) border-b border-(--color-border) relative z-100 max-[750px]:px-4 max-[750px]:py-2">
+    <RouterLink to="/" class="flex items-center gap-2.5 no-underline">
+      <img src="/logo.png" alt="" class="h-[30px] w-auto" />
+      <span class="font-[Orbitron] text-xl font-bold text-(--color-text) tracking-wider">FAR Tracker</span>
     </RouterLink>
     <button
       class="hamburger"
@@ -35,77 +35,43 @@ function logout() {
     >
       <span /><span /><span />
     </button>
-    <div class="links links-desktop">
-      <RouterLink to="/">Home</RouterLink>
-      <RouterLink to="/recovery">Recovery</RouterLink>
-      <RouterLink to="/schedule">Schedule</RouterLink>
+    <div class="flex items-center gap-6 max-[750px]:hidden links-desktop">
+      <RouterLink to="/" class="nav-link">Home</RouterLink>
+      <RouterLink to="/recovery" class="nav-link">Recovery</RouterLink>
+      <RouterLink to="/schedule" class="nav-link">Schedule</RouterLink>
       <template v-if="auth.user?.is_admin">
-        <RouterLink to="/frequencies">Frequencies</RouterLink>
-        <RouterLink to="/admin">Admin</RouterLink>
+        <RouterLink to="/frequencies" class="nav-link">Frequencies</RouterLink>
+        <RouterLink to="/admin" class="nav-link">Admin</RouterLink>
       </template>
-      <button v-if="auth.user" @click="logout">{{ auth.user.username }} // Logout</button>
-      <RouterLink v-else to="/login">Login</RouterLink>
+      <button v-if="auth.user" @click="logout" class="desktop-logout-btn bg-transparent border text-(--color-text) text-sm py-1 px-3 rounded cursor-pointer transition duration-200 hover:border-(--color-accent-red-lt) hover:text-(--color-accent-red-lt)">{{ auth.user.username }} // Logout</button>
+      <RouterLink v-else to="/login" class="nav-link">Login</RouterLink>
     </div>
     <Transition name="drawer">
-      <div v-show="open" class="links links-mobile">
-        <RouterLink to="/" @click="close">Home</RouterLink>
-        <RouterLink to="/recovery" @click="close">Recovery</RouterLink>
-        <RouterLink to="/schedule" @click="close">Schedule</RouterLink>
+      <div v-show="open" class="links-mobile">
+        <RouterLink to="/" @click="close" class="mobile-link">Home</RouterLink>
+        <RouterLink to="/recovery" @click="close" class="mobile-link">Recovery</RouterLink>
+        <RouterLink to="/schedule" @click="close" class="mobile-link">Schedule</RouterLink>
         <template v-if="auth.user?.is_admin">
-          <RouterLink to="/frequencies" @click="close">Frequencies</RouterLink>
-          <RouterLink to="/admin" @click="close">Admin</RouterLink>
+          <RouterLink to="/frequencies" @click="close" class="mobile-link">Frequencies</RouterLink>
+          <RouterLink to="/admin" @click="close" class="mobile-link">Admin</RouterLink>
         </template>
-        <button v-if="auth.user" @click="logout">{{ auth.user.username }} // Logout</button>
-        <RouterLink v-else to="/login" @click="close">Login</RouterLink>
+        <button v-if="auth.user" @click="logout" class="mobile-link bg-transparent !border-none text-left"> {{ auth.user.username }} // Logout</button>
+        <RouterLink v-else to="/login" @click="close" class="mobile-link">Login</RouterLink>
       </div>
     </Transition>
   </nav>
 </template>
 
 <style scoped>
-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.6rem 1.5rem;
-  background: var(--color-nav-bg);
-  border-bottom: 1px solid var(--color-border);
-  position: relative;
-  z-index: 100;
-}
-
-.brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  text-decoration: none;
-}
-.brand-logo {
-  height: 30px;
-  width: auto;
-}
-.brand-text {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: var(--color-text);
-  letter-spacing: 1px;
-}
-
-.links {
-  display: flex;
-  gap: 1.5rem;
-  align-items: center;
-}
-
-.links a {
+/* desktop nav link underline */
+.nav-link {
   color: var(--color-text);
   font-size: 1rem;
   text-decoration: none;
   position: relative;
   transition: color 0.2s ease;
 }
-.links-desktop a::after {
+.nav-link::after {
   content: '';
   position: absolute;
   bottom: -4px;
@@ -116,33 +82,21 @@ nav {
   border-radius: 1px;
   transition: background 0.2s ease, height 0.2s ease;
 }
-.links-desktop a:hover::after,
-.links-desktop a.router-link-active::after {
+.nav-link:hover::after,
+.nav-link.router-link-active::after {
   height: 2px;
   background: var(--color-accent-red);
 }
-
-.links a:hover,
-.links a.router-link-active {
+.nav-link:hover,
+.nav-link.router-link-active {
   color: var(--color-accent-red-lt);
 }
 
-.links button {
-  background: none;
-  border: 1px solid var(--color-border);
-  color: var(--color-text);
-  font-size: 0.9rem;
-  padding: 0.25rem 0.75rem;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.2s ease;
+.desktop-logout-btn {
+  border-color: var(--color-text-muted) !important;
 }
 
-.links button:hover {
-  border-color: var(--color-accent-red-lt);
-  color: var(--color-accent-red-lt);
-}
-
+/* hamburger */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -154,7 +108,6 @@ nav {
   padding: 0;
   cursor: pointer;
 }
-
 .hamburger span {
   display: block;
   height: 2px;
@@ -164,21 +117,16 @@ nav {
   transform-origin: center;
   transition: transform 0.25s ease, opacity 0.2s ease, background-color 0.2s;
 }
-
 .hamburger:hover span { background-color: var(--color-accent-red-lt); }
-
 .hamburger.open span:nth-child(1) { transform: translateY(9px) rotate(45deg); }
 .hamburger.open span:nth-child(2) { opacity: 0; }
 .hamburger.open span:nth-child(3) { transform: translateY(-9px) rotate(-45deg); }
 
+/* mobile drawer */
 .links-mobile { display: none; }
-
 @media (max-width: 750px) {
-  nav { padding: 0.5rem 1rem; }
-
   .hamburger { display: flex; }
-  .links-desktop { display: none; }
-
+  .links-desktop { display: none !important; }
   .links-mobile {
     display: flex;
     position: absolute;
@@ -194,43 +142,35 @@ nav {
     z-index: 50;
     overflow: hidden;
   }
-
-  .links-mobile a,
-  .links-mobile button {
+  .mobile-link {
     padding: 0.75rem 1.25rem;
     border: none;
     border-left: 3px solid transparent;
     border-radius: 0;
     text-align: left;
     font-size: 1rem;
+    color: var(--color-text);
+    text-decoration: none;
     transition: all 0.2s ease;
   }
-
-  .links-mobile a.router-link-active {
+  .mobile-link.router-link-active {
     background: rgba(245, 168, 87, 0.12);
     border-left-color: var(--color-accent-red-lt);
     color: var(--color-accent-red-lt);
   }
-
-  .links-mobile button {
-    background: none;
-    text-align: left;
-    font-size: 1rem;
-  }
 }
 
+/* drawer transition */
 .drawer-enter-active,
 .drawer-leave-active {
   transition: max-height 0.25s ease, opacity 0.2s ease;
   overflow: hidden;
 }
-
 .drawer-enter-from,
 .drawer-leave-to {
   max-height: 0;
   opacity: 0;
 }
-
 .drawer-enter-to,
 .drawer-leave-from {
   max-height: 400px;

@@ -48,24 +48,24 @@ function proceed() {
 </script>
 
 <template>
-  <div class="login-wrapper">
+  <div class="flex justify-center py-12 px-4">
     <div v-if="loggedIn" class="form-card" style="max-width: 600px">
       <h2>API Access</h2>
       <p class="muted">
         Refresh token (expires in 7 days):
       </p>
       <pre class="token-box">{{ auth.refreshToken }}</pre>
-      <button class="copy-btn" @click="copyToken">{{ copied ? 'Copied!' : 'Copy to clipboard' }}</button>
+      <button class="mb-4 text-sm py-1.5 px-3" @click="copyToken">{{ copied ? 'Copied!' : 'Copy to clipboard' }}</button>
       <p class="muted">
         Use it to get an access token (valid for 1 hour):<br/>
         <code>curl -X POST {{ origin }}/api/token/refresh/ -H 'Content-Type: application/json' -d '{"refresh": "&lt;token&gt;"}'</code>
       </p>
-      <p class="warning">Store this token securely. Do not share it.</p>
+      <p class="text-(--color-accent-red)">Store this token securely. Do not share it.</p>
       <button @click="proceed">Continue to {{ nextLabel }}</button>
     </div>
     <div v-else class="form-card">
       <h2>Login</h2>
-      <p v-if="error" class="error">{{ error }}</p>
+      <p v-if="error" class="text-(--color-accent-red) mb-2">{{ error }}</p>
       <form @submit.prevent="handleSubmit">
         <label for="username">Username</label>
         <input id="username" v-model="username" type="text" required />
@@ -78,17 +78,8 @@ function proceed() {
 </template>
 
 <style scoped>
-.login-wrapper {
-  display: flex;
-  justify-content: center;
-  padding: 3rem 1rem;
-}
-.error {
-  color: #dc3545;
-  margin-bottom: 0.5rem;
-}
 .token-box {
-  background: #1a1a1a;
+  background: var(--color-bg);
   color: #0f0;
   padding: 1rem;
   border-radius: 6px;
@@ -96,13 +87,5 @@ function proceed() {
   font-size: 0.8rem;
   word-break: break-all;
   white-space: pre-wrap;
-}
-.warning {
-  color: var(--color-accent-red);
-}
-.copy-btn {
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-  padding: 0.4em 0.8em;
 }
 </style>

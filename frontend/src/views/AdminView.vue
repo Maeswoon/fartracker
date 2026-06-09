@@ -42,43 +42,30 @@ async function refreshTeams() {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .dashboard-container {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  gap: 10px;
-  padding: 10px;
-  justify-content: flex-start;
+  @apply flex flex-row flex-wrap gap-2.5 p-2.5 justify-start;
 }
 
 .dashboard-container :deep(.form-card) {
-  padding: 12px 14px;
+  @apply py-3 px-3.5;
 }
-
 .dashboard-container :deep(.form-card:not(.form-card--wide)) {
-  max-width: 260px;
+  @apply max-w-[260px];
 }
-
 .dashboard-container :deep(.form-card--wide) {
-  max-width: 480px;
+  @apply max-w-[480px];
 }
-
 .dashboard-container :deep(.form-card h3) {
-  margin: 0 0 8px;
-  font-size: 1.25rem;
-  padding: 0 0 4px 0;
-  border-bottom: 2px solid var(--color-accent-red);
-  color: var(--color-text);
+  @apply m-0 mb-2 text-xl p-0 pb-1 border-b-2 border-(--color-accent-red) text-(--color-text);
 }
-
 .dashboard-container :deep(.form-card label) {
-  margin-bottom: 2px;
+  @apply mb-0.5;
 }
-
 .dashboard-container :deep(.form-card input),
 .dashboard-container :deep(.form-card select),
 .dashboard-container :deep(.form-card textarea) {
-  margin-bottom: 8px;
-  padding: 6px 8px;
+  @apply mb-2 py-1.5 px-2;
 }
 </style>

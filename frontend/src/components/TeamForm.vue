@@ -125,48 +125,38 @@ function handleSubmit() {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .form-card--wide {
-  width: 100%;
-  max-width: 640px;
+  @apply w-full max-w-[640px];
 }
 
 .team-form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 16px;
+  @apply grid grid-cols-2 gap-x-4;
 }
-
+.team-form-grid .field-full {
+  @apply col-span-full;
+}
+.team-form-grid input,
+.team-form-grid select {
+  @apply w-full;
+}
 @media (max-width: 600px) {
   .team-form-grid {
-    grid-template-columns: 1fr;
+    @apply grid-cols-1;
   }
 }
 
-.team-form-grid .field-full {
-  grid-column: 1 / -1;
-}
-
-.team-form-grid input,
-.team-form-grid select {
-  width: 100%;
-}
-
 .mode-toggle {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
+  @apply flex gap-2 mb-3.5;
 }
-
 .mode-toggle button {
-  flex: 1;
+  @apply flex-1 border-(--color-border);
   background-color: var(--color-input-bg);
   color: var(--color-text);
-  border: 1px solid var(--color-border);
 }
-
 .mode-toggle button.active {
+  @apply text-white border-(--color-accent-red);
   background-color: var(--color-accent-red);
-  color: white;
-  border-color: var(--color-accent-red);
 }
 </style>

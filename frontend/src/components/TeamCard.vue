@@ -28,141 +28,49 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 </script>
 
 <template>
-  <div :class="['team-card', { 'is-draggable': draggable }]">
-    <div class="team-card-header">
-      <div class="team-name">{{ team.name }}</div>
-      <span class="engine-badge">{{ team.engine_type }}</span>
+  <div :class="['bg-(--color-card) rounded-md p-[5px_8px] border border-(--color-border) text-(--color-text) text-[0.95rem] shadow-sm', { 'cursor-grab select-none active:cursor-grabbing': draggable }]">
+    <div class="flex justify-between items-center">
+      <div class="font-semibold">{{ team.name }}</div>
+      <span class="text-[0.68rem] font-semibold py-px px-1.5 rounded-md whitespace-nowrap ml-1.5 shrink-0 bg-(--color-nav-bg) text-(--color-accent-red) border border-(--color-accent-red)">{{ team.engine_type }}</span>
     </div>
-    <div class="team-meta">{{ team.university }} · Cat {{ team.category }}</div>
-    <div class="team-timing">
+    <div class="text-xs text-(--color-text-muted) mt-px">{{ team.university }} · Cat {{ team.category }}</div>
+    <div class="flex gap-1 mt-0.5 items-center">
       <template v-if="draggable">
-        <label class="timing-field">
+        <label class="text-xs text-(--color-text-muted) flex items-center gap-px">
           F2F
           <input type="number" step="0.5" min="0" class="timing-input" :value="team.fill_to_fire" @change="onInput('fill_to_fire', $event)" />m
         </label>
-        <label class="timing-field">
+        <label class="text-xs text-(--color-text-muted) flex items-center gap-px">
           Hold
           <input type="number" step="0.5" min="0" class="timing-input" :value="team.hold_time" @change="onInput('hold_time', $event)" />m
         </label>
       </template>
       <template v-else>
-        <span class="timing-field">F2F&nbsp;<span class="timing-value">{{ team.fill_to_fire }}</span>m</span>
-        <span class="timing-sep">&middot;</span>
-        <span class="timing-field">Hold&nbsp;<span class="timing-value">{{ team.hold_time }}</span>m</span>
-        <span class="timing-sep">&middot;</span>
+        <span class="text-xs text-(--color-text-muted) flex items-center gap-px">F2F&nbsp;<span class="font-semibold text-(--color-text-muted)">{{ team.fill_to_fire }}</span>m</span>
+        <span class="text-[0.6rem] text-(--color-text-muted)">&middot;</span>
+        <span class="text-xs text-(--color-text-muted) flex items-center gap-px">Hold&nbsp;<span class="font-semibold text-(--color-text-muted)">{{ team.hold_time }}</span>m</span>
+        <span class="text-[0.6rem] text-(--color-text-muted)">&middot;</span>
       </template>
-      <span class="timing-field delay-field">+{{ delay }}m</span>
-      <span v-if="saving" class="saving-dot" />
+      <span class="text-xs text-(--color-accent-red) font-semibold">+{{ delay }}m</span>
+      <span v-if="saving" class="w-1.5 h-1.5 rounded-full bg-(--color-accent-red) animate-pulse" />
     </div>
   </div>
 </template>
 
 <style scoped>
-.team-card {
-  --card-muted: var(--color-text-muted);
-  background: var(--color-card);
-  border-radius: 6px;
-  padding: 5px 8px;
-  border: 1px solid var(--color-border);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
-  color: var(--color-text);
-  font-size: 0.95rem;
-}
-
-.team-card.is-draggable {
-  cursor: grab;
-  user-select: none;
-}
-
-.team-card.is-draggable:active {
-  cursor: grabbing;
-}
-
-.team-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.team-name {
-  font-weight: 600;
-}
-
-.engine-badge {
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 6px;
-  white-space: nowrap;
-  margin-left: 6px;
-  flex-shrink: 0;
-  background: var(--color-nav-bg);
-  color: var(--color-accent-red);
-  border: 1px solid var(--color-accent-red);
-}
-
-.team-meta {
-  font-size: 0.78rem;
-  color: var(--card-muted);
-  margin-top: 1px;
-}
-
-.team-timing {
-  display: flex;
-  gap: 4px;
-  margin-top: 3px;
-  align-items: center;
-}
-
-.timing-field {
-  font-size: 0.74rem;
-  color: var(--card-muted);
-  display: flex;
-  align-items: center;
-  gap: 1px;
-}
-
 .timing-input {
   width: 40px;
   padding: 1px 3px;
   font-size: 0.72rem;
-  border: 1px solid #555;
+  border: 1px solid var(--color-toggle-off);
   border-radius: 3px;
   background: var(--color-nav-bg);
   color: var(--color-text);
   text-align: right;
   font-family: inherit;
 }
-
-.timing-input:not([readonly]):focus {
+.timing-input:focus {
   border-color: var(--color-accent-red);
   outline: none;
-}
-
-.timing-sep {
-  color: var(--card-muted);
-  font-size: 0.6rem;
-}
-
-.timing-value {
-  font-weight: 600;
-  color: var(--card-muted);
-}
-
-.delay-field {
-  color: var(--color-accent-red);
-  font-weight: 600;
-}
-
-.saving-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-accent-red);
-  animation: pulse 0.6s infinite alternate;
-}
-
-@keyframes pulse {
-  to { opacity: 0.3; }
 }
 </style>

@@ -108,11 +108,15 @@ defineExpose({ refresh: loadPieces })
     <TeamSelect v-model="team" :teams="props.teams" />
 
     <div v-if="team" class="add-section">
-      <div class="add-row">
-        <input v-model="newName" type="text" placeholder="Object name" class="field-input" />
-        <CoordinateInput v-model="newLat" axis="lat" compact />
-        <CoordinateInput v-model="newLon" axis="lon" compact />
-        <button class="btn-sm" :disabled="loading" @click="handleAdd">+ Add</button>
+      <div class="flex gap-2">
+        <div class="flex-1 flex gap-1.5 items-center flex-wrap piece-fields">
+          <input v-model="newName" type="text" placeholder="Object name" class="field-input" style="max-width:200px" />
+          <div class="flex gap-1.5 items-center">
+            <CoordinateInput v-model="newLat" axis="lat" compact />
+            <CoordinateInput v-model="newLon" axis="lon" compact />
+          </div>
+        </div>
+        <button class="btn-sm self-center" :disabled="loading" @click="handleAdd">+ Add</button>
       </div>
       <label class="checkbox-label">
         <input v-model="alsoPath" type="checkbox" />
@@ -122,11 +126,17 @@ defineExpose({ refresh: loadPieces })
 
     <div v-if="pieces.length" class="piece-list">
       <div v-for="piece in pieces" :key="piece.id" class="piece-row">
-        <input v-model="piece.object_name" type="text" class="field-input" style="flex:1" />
-        <CoordinateInput v-model="piece.lat" axis="lat" compact />
-        <CoordinateInput v-model="piece.lon" axis="lon" compact />
-        <button class="btn-sm" :disabled="loading" @click="savePiece(piece)">Save</button>
-        <button class="btn-del" @click="handleDelete(piece.id)">✕</button>
+        <div class="flex-1 flex gap-1.5 items-center flex-wrap piece-fields">
+          <input v-model="piece.object_name" type="text" class="field-input" style="max-width:200px" />
+          <div class="flex gap-1.5 items-center">
+            <CoordinateInput v-model="piece.lat" axis="lat" compact />
+            <CoordinateInput v-model="piece.lon" axis="lon" compact />
+          </div>
+        </div>
+        <div class="flex gap-1 items-center self-center">
+          <button class="btn-sm" :disabled="loading" @click="savePiece(piece)">Save</button>
+          <button class="btn-del" @click="handleDelete(piece.id)">✕</button>
+        </div>
       </div>
     </div>
     <p v-else-if="team && !loading && !errorMsg" class="muted">No pieces for this team.</p>
@@ -134,64 +144,36 @@ defineExpose({ refresh: loadPieces })
 </template>
 
 <style scoped>
-.add-section { margin-top: 10px; }
-.add-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
+@reference "tailwindcss";
+
+.add-section { @apply mt-2.5; }
+
+@media (max-width: 1200px) and (min-width: 901px) {
+  .piece-fields { @apply flex-col items-start; }
+}
+@media (max-width: 400px) {
+  .piece-fields { @apply flex-col items-start; }
 }
 
 .field-input {
-  padding: 4px 6px;
-  font-size: 0.82rem;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
+  @apply py-1 px-1.5 text-[0.82rem] border border-(--color-border) rounded-sm min-w-[120px];
+  font-family: inherit;
   background: var(--color-input-bg);
   color: var(--color-text);
-  font-family: inherit;
 }
-.btn-sm {
-  padding: 4px 12px;
-  font-size: 0.82rem;
-  white-space: nowrap;
-}
+.btn-sm { @apply py-1 px-3 text-[0.82rem] whitespace-nowrap; }
+.checkbox-label { @apply mt-2 text-xs flex items-center gap-2; }
 
-.checkbox-label {
-  margin-top: 8px;
-  font-size: 0.8rem;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.piece-list {
-  margin-top: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
+.piece-list { @apply mt-2.5 flex flex-col gap-1 max-h-[300px] overflow-y-auto; }
 .piece-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 4px 8px;
-  border-radius: 4px;
+  @apply flex gap-2 py-1 px-2 rounded;
   background: var(--color-surface-alt);
 }
 
 .btn-del {
-  background: none;
-  border: 1px solid transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 2px 6px;
-  font-size: 0.82rem;
+  @apply bg-transparent border border-transparent text-(--color-text-muted) cursor-pointer py-1 px-1.5 text-[0.82rem];
 }
 .btn-del:hover {
-  color: var(--color-accent-red);
-  border-color: var(--color-accent-red);
+  @apply text-(--color-accent-red) border-(--color-accent-red);
 }
 </style>

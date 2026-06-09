@@ -134,59 +134,28 @@ defineExpose({ refresh: loadPath })
 </template>
 
 <style scoped>
-.path-table-wrap {
-  margin-top: 8px;
-}
+@reference "tailwindcss";
 
-.path-table {
-  width: 100%;
-  font-size: 0.82rem;
-}
-
-.path-table th,
-.path-table td {
-  padding: 4px 6px;
-}
-
-.ts-cell {
-  font-size: 0.72rem;
-  color: var(--color-text-muted);
-}
-
-.btn-sm {
-  padding: 4px 12px;
-  font-size: 0.82rem;
-}
+.path-table-wrap { @apply mt-2; }
+.path-table { @apply w-full text-[0.82rem]; }
+.path-table th, .path-table td { @apply py-1 px-1.5; }
+.ts-cell { @apply text-[0.72rem] text-(--color-text-muted); }
+.btn-sm { @apply py-1 px-3 text-[0.82rem]; }
 
 .btn-del {
-  background: none;
-  border: 1px solid transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  padding: 2px 6px;
+  @apply bg-transparent border border-transparent text-(--color-text-muted) cursor-pointer py-0.5 px-1.5;
 }
 .btn-del:hover {
-  color: var(--color-accent-red);
-  border-color: var(--color-accent-red);
+  @apply text-(--color-accent-red) border-(--color-accent-red);
 }
 
 .btn-save {
-  margin-top: 8px;
-  padding: 5px 16px;
-  font-size: 0.85rem;
+  @apply mt-2 py-[5px] px-4 text-[0.85rem] rounded cursor-pointer border-none text-white;
   background: var(--color-accent-red);
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
 }
 .btn-save:hover { background: var(--color-accent-red); }
 
-.add-point { margin-top: 10px; }
-.add-row {
-  display: flex;
-  gap: 6px;
-  align-items: center;
-}
-.add-row .coord-input { flex: 1; }
+.add-point { @apply mt-2.5; }
+.add-row { @apply flex gap-1.5 items-center; }
+.add-row .coord-input { @apply flex-none; }
 </style>

@@ -1,12 +1,22 @@
-*, *::before, *::after { box-sizing: border-box; }
+@import "tailwindcss";
 
+@theme {
+  --color-accent-red: #c0392b;
+  --color-accent-red-lt: #e74c3c;
+  --color-success: #28a745;
+  --color-warning: #ffc107;
+  --color-warning-text: #333;
+  --font-sans: 'Inter', sans-serif;
+}
+
+/* ── CSS custom properties (kept for var() references in existing components) ── */
 :root {
-  --breakpoint-phone: 600px;
-  --breakpoint-tablet: 900px;
-
-  /* accents (same both themes) */
+  /* accents & semantics (same both themes) */
   --color-accent-red:      #c0392b;
   --color-accent-red-lt:   #e74c3c;
+  --color-success:         #28a745;
+  --color-warning:         #ffc107;
+  --color-warning-text:    #333;
 
   /* dark theme (default) */
   --color-bg:              #1a1a1a;
@@ -54,6 +64,7 @@
   }
 }
 
+/* ── Base elements ── */
 html, body, #app {
   background: var(--color-bg);
   color: var(--color-text);
@@ -144,6 +155,7 @@ tbody tr:hover {
   transition: background-color 0.2s ease-in-out;
 }
 
+/* ── Shared utility classes (to be migrated per-component) ── */
 .dashboard-container {
   display: flex;
   flex-direction: row;
@@ -185,7 +197,6 @@ tbody tr:hover {
   border-radius: 16px;
   color: #fff;
   font-weight: 700;
-  font-family: 'Inter', sans-serif;
   font-size: 1rem;
   text-transform: capitalize;
   min-width: 100px;
@@ -194,9 +205,9 @@ tbody tr:hover {
   transition: background-color 0.3s ease;
 }
 
-.status-green  { background-color: #28a745; }
-.status-yellow { background-color: #ffc107; color: #333; }
-.status-red    { background-color: #dc3545; }
+.status-green  { background-color: var(--color-success); }
+.status-yellow { background-color: var(--color-warning); color: var(--color-warning-text); }
+.status-red    { background-color: var(--color-accent-red); }
 
 .form-card {
   background-color: var(--color-surface);
@@ -257,8 +268,8 @@ table h1, table h2, table h3, table h4, table h5, table h6 {
   background-color: var(--color-accent-red);
 }
 
-.success { color: #28a745; }
-.error   { color: #dc3545; }
+.success { color: var(--color-success); }
+.error   { color: var(--color-accent-red); }
 .muted   { color: var(--color-text-muted); }
 
 .checkbox-label {

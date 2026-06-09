@@ -97,25 +97,25 @@ function confirmRecall() {
 
 <template>
   <!-- ── Salvo lane: fixed slot grid ── -->
-  <div v-if="isSalvo" class="lane salvo-lane">
+  <div v-if="isSalvo" class="lane min-w-[220px]">
     <div class="lane-header">
-      <span class="lane-label">{{ lane.label }}</span>
-      <button v-if="canDrag" class="sort-btn" title="Auto-sort by F2F time" @click="confirmSort">⇅</button>
+      <span class="font-semibold text-[0.95rem] text-(--color-text)">{{ lane.label }}</span>
+      <button v-if="canDrag" class="lane-btn sort-btn" title="Auto-sort by F2F time" @click="confirmSort">⇅</button>
       <span class="lane-count">{{ lane.teams.length }}</span>
     </div>
-    <div class="lane-body slot-grid">
+    <div class="flex-1 min-h-[60px] p-0.5 flex flex-col gap-0 overflow-y-auto">
       <div
         v-for="(slotTeams, slotIdx) in slots"
         :key="slotIdx"
-        :class="['slot-row', { occupied: slotTeams.length > 0 }]"
+        :class="['slot-row', { 'min-h-0': slotTeams.length > 0 }]"
       >
-        <span class="slot-label">{{ slotIdx * 2 }}m</span>
+        <span class="w-[30px] shrink-0 text-[0.7rem] text-(--color-text-muted) text-right pr-1">{{ slotIdx * 2 }}m</span>
         <draggable
           v-if="canDrag"
           v-model="slots[slotIdx]"
           :group="{ name: 'schedule', pull: canDrag, put: () => slots[slotIdx].length === 0 }"
           item-key="team_identifier"
-          class="slot-drop"
+          class="flex-1 min-h-[22px] py-px px-0.5"
           ghost-class="drop-placeholder"
           :force-fallback="true"
           fallback-class="drag-floating"
@@ -130,7 +130,7 @@ function confirmRecall() {
             <TeamCard :team="team" :lane-label="lane.short_label" draggable :on-update-field="onUpdateField" />
           </template>
         </draggable>
-        <div v-else class="slot-drop">
+        <div v-else class="flex-1 min-h-[22px] py-px px-0.5">
           <TeamCard
             v-for="team in slotTeams"
             :key="team.team_identifier"
@@ -146,10 +146,10 @@ function confirmRecall() {
   <!-- ── Pending / Recovered ── -->
   <div v-else class="lane">
     <div class="lane-header">
-      <span class="lane-label">{{ lane.label }}</span>
+      <span class="font-semibold text-[0.95rem] text-(--color-text)">{{ lane.label }}</span>
       <button
         v-if="canDrag && lane.id === 'pending'"
-        class="recall-btn"
+        class="lane-btn recall-btn"
         title="Move all teams back to Pending"
         @click="confirmRecall"
       >↺ Recall</button>
@@ -160,7 +160,7 @@ function confirmRecall() {
       v-model="list"
       :group="{ name: 'schedule', pull: canDrag, put: true }"
       item-key="team_identifier"
-      class="lane-body"
+      class="flex-1 min-h-[60px] p-1.5 flex flex-col gap-1"
       ghost-class="drop-placeholder"
       drag-class="drag-original"
       :force-fallback="true"
@@ -177,7 +177,7 @@ function confirmRecall() {
           :on-update-field="onUpdateField" />
       </template>
     </draggable>
-    <div v-else class="lane-body">
+    <div v-else class="flex-1 min-h-[60px] p-1.5 flex flex-col gap-1">
       <TeamCard
         v-for="team in list"
         :key="team.team_identifier"
@@ -189,14 +189,11 @@ function confirmRecall() {
 </template>
 
 <style scoped>
+@reference "tailwindcss";
+
 .lane {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0;
-  min-width: 200px;
+  @apply flex flex-col flex-1 min-w-[200px] rounded-[10px] border border-(--color-border);
   background: var(--color-surface);
-  border-radius: 10px;
-  border: 1px solid var(--color-border);
   transition: box-shadow 0.3s ease;
 }
 .lane:hover {
@@ -204,70 +201,39 @@ function confirmRecall() {
 }
 
 .lane-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 12px;
+  @apply flex justify-between items-center py-2 px-3 rounded-t-[10px];
   background: var(--color-nav-bg);
   border-bottom: 1px solid var(--color-border);
-  border-radius: 10px 10px 0 0;
-  border-radius: 10px 10px 0 0;
 }
 
-.lane-label { font-weight: 600; font-size: 0.95rem; color: var(--color-text); }
-
-.sort-btn {
-  background: none; border: 1px solid var(--color-border); color: var(--color-text-muted);
-  border-radius: 4px; cursor: pointer; font-size: 0.9rem;
-  padding: 2px 8px; margin-left: auto; margin-right: 6px;
-  transition: all 0.2s ease;
+.lane-btn {
+  @apply bg-transparent border border-(--color-border) text-(--color-text-muted) rounded cursor-pointer ml-auto mr-1.5 transition-all duration-200;
 }
-.sort-btn:hover { color: var(--color-accent-red); border-color: var(--color-accent-red); }
-
-.recall-btn {
-  background: none; border: 1px solid var(--color-border); color: var(--color-text-muted);
-  border-radius: 4px; cursor: pointer; font-size: 0.85rem;
-  padding: 2px 8px; margin-left: auto; margin-right: 6px;
-  transition: all 0.2s ease;
+.lane-btn:hover {
+  color: var(--color-accent-red);
+  border-color: var(--color-accent-red);
 }
-.recall-btn:hover { color: var(--color-accent-red); border-color: var(--color-accent-red); }
+.sort-btn { font-size: 0.9rem; padding: 2px 8px; }
+.recall-btn { font-size: 0.85rem; padding: 2px 8px; }
 
 .lane-count {
-  background: rgba(192, 57, 43, 0.85); color: #fff;
-  border-radius: 10px; padding: 1px 8px; font-size: 0.7rem; font-weight: 600;
+  @apply rounded-[10px] py-px px-2 text-[0.7rem] font-semibold text-white;
+  background: color-mix(in srgb, var(--color-accent-red) 85%, transparent);
   backdrop-filter: blur(4px);
 }
 
-.lane-body {
-  flex: 1; min-height: 60px; padding: 6px;
-  display: flex; flex-direction: column; gap: 4px;
-}
-
-/* ── Slot grid ── */
-.salvo-lane { min-width: 220px; }
-.slot-grid { gap: 0; padding: 2px; overflow-y: auto; }
-
 .slot-row {
-  display: flex; align-items: center;
-  border-bottom: 1px solid var(--color-border);
-  min-height: 24px;
+  @apply flex items-center border-b border-(--color-border) min-h-[24px];
   transition: background 0.15s ease;
 }
 .slot-row:hover { background: var(--color-table-stripe); }
-.slot-row.occupied { min-height: 0; }
 
-.slot-label {
-  width: 30px; flex-shrink: 0;
-  font-size: 0.7rem; color: var(--color-text-muted);
-  text-align: right; padding-right: 4px;
+:deep(.drop-placeholder) {
+  @apply rounded min-h-[30px];
+  background: var(--color-accent-red);
+  opacity: 0.25;
+  transition: opacity 0.15s ease;
 }
-
-.slot-drop {
-  flex: 1; min-height: 22px;
-  padding: 1px 2px;
-}
-
-:deep(.drop-placeholder) { background: var(--color-accent-red); opacity: 0.25; border-radius: 4px; min-height: 30px; transition: opacity 0.15s ease; }
 :deep(.drag-original) { opacity: 0.3; }
 </style>
 
