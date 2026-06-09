@@ -150,3 +150,15 @@ class SalvoSchedule(models.Model):
 
     def __str__(self):
         return f"Salvo Schedule (updated {self.updated_at.isoformat()})"
+
+
+class ScheduleChangeLog(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    team_identifier = models.CharField(max_length=10)
+    data = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ['-timestamp']
+
+    def __str__(self):
+        return f"Change for {self.team_identifier} at {self.timestamp.isoformat()}"

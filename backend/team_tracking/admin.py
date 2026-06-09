@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from .models import Team, LaunchRail, Bunker, SiteStatus, SalvoSchedule
+from .models import Team, LaunchRail, Bunker, SiteStatus, SalvoSchedule, ScheduleChangeLog
 
 # Register your models here.
 admin.site.register(Team)
@@ -21,4 +21,12 @@ class SalvoScheduleAdmin(admin.ModelAdmin):
         form.base_fields['lane_definitions'].widget = forms.Textarea(attrs=json_attrs)
         form.base_fields['lane_teams'].widget = forms.Textarea(attrs={'rows': 20, 'style': 'font-family: monospace; width: 600px;'})
         return form
+
+
+@admin.register(ScheduleChangeLog)
+class ScheduleChangeLogAdmin(admin.ModelAdmin):
+    list_display = ['team_identifier', 'timestamp']
+    readonly_fields = ['timestamp', 'team_identifier', 'data']
+    list_filter = ['team_identifier']
+    ordering = ['-timestamp']
 

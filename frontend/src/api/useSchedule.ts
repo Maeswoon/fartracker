@@ -20,6 +20,7 @@ function assembleLanes(
       fill_to_fire: overrides.fill_to_fire ?? t.fill_to_fire,
       hold_time: overrides.hold_time ?? t.hold_time,
       salvo_time: overrides.salvo_time ?? t.salvo_time,
+      modifier_fraction: overrides.modifier_fraction ?? t.modifier_fraction,
     })
   }
 
@@ -33,6 +34,15 @@ function assembleLanes(
     }
     return { id: ld.id, label: ld.label, short_label: ld.short_label, teams: laneTeamsArr }
   })
+
+  // Zero out salvo_time for teams not in a salvo lane
+  for (const lane of lanes) {
+    if (!lane.id.startsWith('salvo')) {
+      for (const t of lane.teams) {
+        t.salvo_time = 0
+      }
+    }
+  }
 
   const unplaced = [...teamMap.keys()].filter(tid => !placedIds.has(tid))
   if (unplaced.length) {
@@ -109,6 +119,7 @@ export function useSchedule(isAdmin: Ref<boolean>) {
         m.set('fill_to_fire', base.fill_to_fire)
         m.set('hold_time', base.hold_time)
         m.set('salvo_time', base.salvo_time)
+        m.set('modifier_fraction', base.modifier_fraction ?? -1)
         m.set('lane', lanes.value.find(l => l.teams.some(t => t.team_identifier === teamId))?.id || 'pending')
       }
       yTeams.set(teamId, m)
@@ -255,7 +266,7 @@ export function useSchedule(isAdmin: Ref<boolean>) {
       dstArr.insert(Math.min(toIndex, dstArr.length), [teamId])
     }
 
-    if (toLaneId === 'pending') {
+    if (!toLaneId.startsWith('salvo')) {
       updateTeamField(teamId, 'salvo_time', 0)
     }
   }

@@ -13,6 +13,30 @@ const saving = ref(false)
 
 const delay = computed(() => Math.max(0, props.team.salvo_time * 2 - props.team.fill_to_fire))
 
+const fractions = Array.from({ length: 7 }, (_, n) => ({
+  label: n === 0 ? '1' : `1/${2 ** n}`,
+  value: n,
+}))
+
+function setFraction(pos: number, event: MouseEvent) {
+  if (event.ctrlKey || event.metaKey) {
+    // ctrl+click: erase this position and all to the right
+    const cur = props.team.modifier_fraction ?? -1
+    const newVal = pos - 1
+    const capped = cur >= 0 && newVal > cur ? cur : newVal
+    const label = capped >= 0 ? fractions[capped].label : 'none'
+    if (!window.confirm(`Clear modifier fraction down to ${label}?`)) return
+    saving.value = true
+    props.onUpdateField(props.team.team_identifier, 'modifier_fraction', capped)
+    setTimeout(() => { saving.value = false }, 300)
+    return
+  }
+  if (!window.confirm(`Set modifier fraction to ${fractions[pos].label}?`)) return
+  saving.value = true
+  props.onUpdateField(props.team.team_identifier, 'modifier_fraction', pos)
+  setTimeout(() => { saving.value = false }, 300)
+}
+
 function updateField(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', value: string) {
   const num = parseFloat(value)
   if (isNaN(num) || num < 0) return
@@ -54,6 +78,15 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
       <span class="text-xs text-(--color-accent-red) font-semibold">+{{ delay }}m</span>
       <span v-if="saving" class="w-1.5 h-1.5 rounded-full bg-(--color-accent-red) animate-pulse" />
     </div>
+    <div v-if="draggable" class="flex gap-px mt-0.5">
+      <button
+        v-for="f in fractions"
+        :key="f.value"
+        class="fraction-btn"
+        :class="{ checked: team.modifier_fraction != null && f.value <= team.modifier_fraction }"
+        @click="(e: MouseEvent) => setFraction(f.value, e)"
+      >{{ f.label }}</button>
+    </div>
   </div>
 </template>
 
@@ -72,5 +105,26 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 .timing-input:focus {
   border-color: var(--color-accent-red);
   outline: none;
+}
+
+.fraction-btn {
+  font-size: 0.6rem;
+  padding: 0 3px;
+  min-width: 22px;
+  height: 16px;
+  border: 1px solid var(--color-border);
+  border-radius: 2px;
+  background: var(--color-nav-bg);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+  transition: all 0.15s ease;
+}
+.fraction-btn.checked {
+  background: var(--color-accent-red);
+  border-color: var(--color-accent-red);
+  color: #fff;
+  text-decoration: line-through;
 }
 </style>

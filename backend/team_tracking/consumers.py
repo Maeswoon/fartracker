@@ -129,7 +129,7 @@ class ScheduleConsumer(YroomConsumer):
 def _save_lanes(lanes_data, team_data=None, schedule_data=None):
     import json
 
-    from .models import SalvoSchedule
+    from .models import SalvoSchedule, ScheduleChangeLog
     from .views import DEFAULT_LANE_DEFINITIONS
     from django.utils import dateparse
 
@@ -141,6 +141,7 @@ def _save_lanes(lanes_data, team_data=None, schedule_data=None):
         schedule_data = json.loads(schedule_data)
 
     schedule, _ = SalvoSchedule.objects.get_or_create(pk=1)
+    prev_team_data = schedule.team_data if isinstance(schedule.team_data, dict) else {}
 
     # Only keep lane keys that match a known lane definition so that
     # internal Yjs sub-document keys (e.g. "salvo-1-12") don't leak
@@ -160,3 +161,16 @@ def _save_lanes(lanes_data, team_data=None, schedule_data=None):
             # empty string or missing means cleared
             schedule.salvo_timer_started = None
     schedule.save()
+
+    # Log changes for teams whose data differs from the previous save
+    if team_data and isinstance(team_data, dict):
+        logs = []
+        for tid, new_data in team_data.items():
+            prev = prev_team_data.get(tid, {})
+            if prev != new_data:
+                logs.append(ScheduleChangeLog(
+                    team_identifier=tid,
+                    data=new_data,
+                ))
+        if logs:
+            ScheduleChangeLog.objects.bulk_create(logs)

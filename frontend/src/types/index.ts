@@ -88,6 +88,7 @@ export interface ScheduleTeam {
   fill_to_fire: number
   hold_time: number
   salvo_time: number
+  modifier_fraction?: number  // 0-6: 1, 1/2, 1/4, 1/8, 1/16, 1/32, 1/64 (higher positions are crossed off)
 }
 
 export interface ScheduleLane {
