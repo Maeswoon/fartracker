@@ -41,7 +41,7 @@ const recoveryTeamIds = computed(() => {
 })
 
 const teams = computed(() =>
-  allTeams.value.filter(t => t.status === 'Recovering' || t.status === 'Recovered')
+  allTeams.value.filter(t => t.status === 'Recovering')
 )
 
 const filterableTeams = computed(() => {

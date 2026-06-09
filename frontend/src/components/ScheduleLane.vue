@@ -16,6 +16,8 @@ const emit = defineEmits<{
   change: [payload: { teamId: string; toIndex: number }]
   autoSort: []
   recallAll: []
+  dragStart: []
+  dragEnd: []
 }>()
 
 const auth = useAuthStore()
@@ -121,6 +123,8 @@ function confirmRecall() {
           :empty-insert-threshold="20"
           :move="(e: any) => checkSlotMove(e, slotIdx)"
           @change="(e: any) => onSlotChange(slotIdx, e)"
+          @start="() => emit('dragStart')"
+          @end="() => emit('dragEnd')"
         >
           <template #item="{ element: team }">
             <TeamCard :team="team" :lane-label="lane.short_label" draggable :on-update-field="onUpdateField" />
@@ -162,7 +166,9 @@ function confirmRecall() {
       :force-fallback="true"
       fallback-class="drag-floating"
       :animation="200"
-      @change="onListChange">
+      @change="onListChange"
+      @start="() => emit('dragStart')"
+      @end="() => emit('dragEnd')">
       <template #item="{ element: team }">
         <TeamCard
           :team="team"
@@ -216,7 +222,7 @@ function confirmRecall() {
   padding: 2px 8px; margin-left: auto; margin-right: 6px;
   transition: all 0.2s ease;
 }
-.sort-btn:hover { color: var(--color-accent-orange); border-color: var(--color-accent-orange); }
+.sort-btn:hover { color: var(--color-accent-red); border-color: var(--color-accent-red); }
 
 .recall-btn {
   background: none; border: 1px solid var(--color-border); color: var(--color-text-muted);

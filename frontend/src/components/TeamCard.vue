@@ -97,8 +97,8 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
   margin-left: 6px;
   flex-shrink: 0;
   background: var(--color-nav-bg);
-  color: var(--color-accent-orange);
-  border: 1px solid var(--color-accent-orange);
+  color: var(--color-accent-red);
+  border: 1px solid var(--color-accent-red);
 }
 
 .team-meta {
@@ -135,7 +135,7 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 }
 
 .timing-input:not([readonly]):focus {
-  border-color: var(--color-accent-orange);
+  border-color: var(--color-accent-red);
   outline: none;
 }
 
@@ -150,7 +150,7 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
 }
 
 .delay-field {
-  color: var(--color-accent-orange);
+  color: var(--color-accent-red);
   font-weight: 600;
 }
 
@@ -158,7 +158,7 @@ function onInput(field: 'fill_to_fire' | 'hold_time' | 'salvo_time', event: Even
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--color-accent-orange);
+  background: var(--color-accent-red);
   animation: pulse 0.6s infinite alternate;
 }
 

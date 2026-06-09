@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onUnmounted } from 'vue'
+import { computed, ref, watch, onMounted, onUnmounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSchedule } from '@/api/useSchedule'
 import { postSalvoTimer } from '@/api'
@@ -87,13 +87,83 @@ function autoSortSalvo(laneId: string) {
   }
 }
 
+// ── Responsive lane pagination ──
+const windowWidth = ref(window.innerWidth)
+const lanesPerView = computed(() => {
+  if (windowWidth.value <= 600) return 1
+  if (windowWidth.value <= 1250) return 2
+  return lanes.value.length
+})
+const maxLaneIndex = computed(() => Math.max(0, lanes.value.length - lanesPerView.value))
 const currentLaneIndex = ref(0)
+
+watch(lanesPerView, () => {
+  if (currentLaneIndex.value > maxLaneIndex.value) {
+    currentLaneIndex.value = maxLaneIndex.value
+  }
+})
+
+function onWindowResize() { windowWidth.value = window.innerWidth }
+onMounted(() => window.addEventListener('resize', onWindowResize))
+onUnmounted(() => window.removeEventListener('resize', onWindowResize))
+
 function prevLane() {
   if (currentLaneIndex.value > 0) currentLaneIndex.value--
 }
 function nextLane() {
-  if (currentLaneIndex.value < lanes.value.length - 1) currentLaneIndex.value++
+  if (currentLaneIndex.value < maxLaneIndex.value) currentLaneIndex.value++
 }
+
+// ── Edge-triggered lane switching during drag ──
+const isDragging = ref(false)
+const edgeZone = ref<'left' | 'right' | null>(null)
+let edgeTimer: ReturnType<typeof setTimeout> | null = null
+let cooldownTimer: ReturnType<typeof setTimeout> | null = null
+const EDGE_DEBOUNCE = 500   // ms hovering at edge before switching
+const EDGE_COOLDOWN = 400   // ms before another switch is allowed
+const EDGE_FRACTION = 0.12  // fraction of viewport width from edge
+
+function onDragStart() {
+  isDragging.value = true
+  document.addEventListener('pointermove', onPointerMove)
+}
+
+function onDragEnd() {
+  isDragging.value = false
+  edgeZone.value = null
+  document.removeEventListener('pointermove', onPointerMove)
+  if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null }
+  if (cooldownTimer) { clearTimeout(cooldownTimer); cooldownTimer = null }
+}
+
+function onPointerMove(e: PointerEvent) {
+  const threshold = window.innerWidth * EDGE_FRACTION
+  let zone: 'left' | 'right' | null = null
+  if (e.clientX < threshold) zone = 'left'
+  else if (e.clientX > window.innerWidth - threshold) zone = 'right'
+
+  if (zone !== edgeZone.value) {
+    edgeZone.value = zone
+    if (edgeTimer) { clearTimeout(edgeTimer); edgeTimer = null }
+
+    if (zone && !cooldownTimer) {
+      edgeTimer = setTimeout(() => {
+        if (zone === 'left') prevLane()
+        else nextLane()
+        edgeTimer = null
+        edgeZone.value = null
+        cooldownTimer = setTimeout(() => { cooldownTimer = null }, EDGE_COOLDOWN)
+      }, EDGE_DEBOUNCE)
+    }
+  }
+}
+
+// Safety: clean up if component unmounts mid-drag
+onUnmounted(() => {
+  document.removeEventListener('pointermove', onPointerMove)
+  if (edgeTimer) clearTimeout(edgeTimer)
+  if (cooldownTimer) clearTimeout(cooldownTimer)
+})
 </script>
 
 <template>
@@ -114,12 +184,12 @@ function nextLane() {
       </div>
     </div>
 
-    <div class="lanes-nav">
-      <button class="lane-arrow" :disabled="currentLaneIndex === 0" @click="prevLane">◀</button>
+    <div v-if="lanesPerView < lanes.length" class="lanes-nav">
+      <button class="lane-arrow" :class="{ 'arrow-hot': edgeZone === 'left' && currentLaneIndex > 0 }" :disabled="currentLaneIndex === 0" @click="prevLane">◀</button>
       <span class="lane-nav-label">{{ lanes[currentLaneIndex]?.label }}</span>
-      <button class="lane-arrow" :disabled="currentLaneIndex >= lanes.length - 1" @click="nextLane">▶</button>
+      <button class="lane-arrow" :class="{ 'arrow-hot': edgeZone === 'right' && currentLaneIndex < maxLaneIndex }" :disabled="currentLaneIndex >= maxLaneIndex" @click="nextLane">▶</button>
     </div>
-    <div class="lanes-container">
+    <div class="lanes-container" :class="{ 'lanes-paginated': lanesPerView < lanes.length }">
       <ScheduleLane
         v-for="(lane, i) in lanes"
         :key="lane.id"
@@ -127,10 +197,12 @@ function nextLane() {
         :draggable="isAdmin"
         :on-update-field="updateTeamField"
         :team-min-slots="teamMinSlots"
-        :class="{ 'lane-active': i === currentLaneIndex }"
+        :class="{ 'lane-visible': i >= currentLaneIndex && i < currentLaneIndex + lanesPerView }"
         @change="(e) => onLaneChange(lane.id, e)"
         @auto-sort="autoSortSalvo(lane.id)"
         @recall-all="recallAll"
+        @drag-start="onDragStart"
+        @drag-end="onDragEnd"
       />
     </div>
   </div>
@@ -202,14 +274,54 @@ function nextLane() {
   transition: all 0.2s ease;
 }
 .timer-btn:hover {
-  border-color: var(--color-accent-orange);
-  color: var(--color-accent-orange);
+  border-color: var(--color-accent-red);
+  color: var(--color-accent-red);
   background: rgba(17, 17, 17, 0.8);
 }
 
 
 .lanes-nav {
-  display: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+.lane-arrow {
+  width: 44px;
+  padding: 6px 0;
+  text-align: center;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  background: rgba(17, 17, 17, 0.6);
+  color: #ccc;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.lane-arrow:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.lane-arrow:not(:disabled):hover {
+  border-color: var(--color-accent-red);
+  color: var(--color-accent-red);
+}
+.lane-arrow.arrow-hot {
+  border-color: var(--color-accent-red);
+  color: var(--color-accent-red);
+  animation: arrow-pulse 0.45s ease-in-out infinite alternate;
+}
+@keyframes arrow-pulse {
+  from { transform: scale(1); }
+  to   { transform: scale(1.18); }
+}
+.lane-nav-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--color-text);
+  width: 120px;
+  text-align: center;
 }
 
 .lanes-container {
@@ -219,6 +331,19 @@ function nextLane() {
   overflow-x: auto;
   padding-bottom: 12px;
   align-items: stretch;
+}
+
+/* Paginated: only show lanes within the current window */
+.lanes-paginated {
+  gap: 8px;
+  overflow-x: visible;
+}
+.lanes-paginated :deep(.lane) {
+  display: none;
+  flex: 1;
+}
+.lanes-paginated :deep(.lane.lane-visible) {
+  display: flex;
 }
 
 @media (max-width: 768px) {
@@ -237,49 +362,6 @@ function nextLane() {
   .timer-controls {
     flex-direction: column;
     align-items: flex-end;
-  }
-
-  .lanes-nav {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    margin-top: 12px;
-  }
-  .lane-arrow {
-    padding: 6px 14px;
-    border: 1px solid rgba(255,255,255,0.15);
-    border-radius: 6px;
-    background: rgba(17, 17, 17, 0.6);
-    color: #ccc;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-  .lane-arrow:disabled {
-    opacity: 0.3;
-    cursor: default;
-  }
-  .lane-arrow:not(:disabled):hover {
-    border-color: var(--color-accent-orange);
-    color: var(--color-accent-orange);
-  }
-  .lane-nav-label {
-    font-weight: 600;
-    font-size: 0.95rem;
-    color: var(--color-text);
-    min-width: 100px;
-    text-align: center;
-  }
-  .lanes-container {
-    gap: 0;
-  }
-  .lanes-container :deep(.lane) {
-    display: none;
-    flex: 1;
-  }
-  .lanes-container :deep(.lane.lane-active) {
-    display: flex;
   }
 }
 </style>

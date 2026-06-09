@@ -180,7 +180,7 @@ defineExpose({ refresh: loadPath })
   border-radius: 4px;
   cursor: pointer;
 }
-.btn-save:hover { background: var(--color-accent-orange); }
+.btn-save:hover { background: var(--color-accent-red); }
 
 .add-point { margin-top: 10px; }
 .add-row {

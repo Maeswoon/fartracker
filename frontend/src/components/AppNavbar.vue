@@ -105,7 +105,7 @@ nav {
   position: relative;
   transition: color 0.2s ease;
 }
-.links a::after {
+.links-desktop a::after {
   content: '';
   position: absolute;
   bottom: -4px;
@@ -116,15 +116,15 @@ nav {
   border-radius: 1px;
   transition: background 0.2s ease, height 0.2s ease;
 }
-.links a:hover::after,
-.links a.router-link-active::after {
+.links-desktop a:hover::after,
+.links-desktop a.router-link-active::after {
   height: 2px;
-  background: var(--color-accent-orange);
+  background: var(--color-accent-red);
 }
 
 .links a:hover,
 .links a.router-link-active {
-  color: var(--color-accent-orange-lt);
+  color: var(--color-accent-red-lt);
 }
 
 .links button {
@@ -139,8 +139,8 @@ nav {
 }
 
 .links button:hover {
-  border-color: var(--color-accent-orange-lt);
-  color: var(--color-accent-orange-lt);
+  border-color: var(--color-accent-red-lt);
+  color: var(--color-accent-red-lt);
 }
 
 .hamburger {
@@ -165,7 +165,7 @@ nav {
   transition: transform 0.25s ease, opacity 0.2s ease, background-color 0.2s;
 }
 
-.hamburger:hover span { background-color: var(--color-accent-orange-lt); }
+.hamburger:hover span { background-color: var(--color-accent-red-lt); }
 
 .hamburger.open span:nth-child(1) { transform: translateY(9px) rotate(45deg); }
 .hamburger.open span:nth-child(2) { opacity: 0; }
@@ -208,8 +208,8 @@ nav {
 
   .links-mobile a.router-link-active {
     background: rgba(245, 168, 87, 0.12);
-    border-left-color: var(--color-accent-orange-lt);
-    color: var(--color-accent-orange-lt);
+    border-left-color: var(--color-accent-red-lt);
+    color: var(--color-accent-red-lt);
   }
 
   .links-mobile button {

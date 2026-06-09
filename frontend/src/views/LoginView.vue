@@ -98,7 +98,7 @@ function proceed() {
   white-space: pre-wrap;
 }
 .warning {
-  color: var(--color-accent-orange);
+  color: var(--color-accent-red);
 }
 .copy-btn {
   margin-bottom: 1rem;
