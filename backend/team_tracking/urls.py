@@ -21,4 +21,7 @@ urlpatterns = [
     path("site_status", views.SiteStatusView.as_view(), name="site_status"),
     path("schedule/timer", views.ScheduleTimerView.as_view(), name="schedule-timer"),
     path("schedule", views.ScheduleView.as_view(), name="schedule"),
+    path("votes", views.VoteListCreateView.as_view(), name="votes"),
+    path("votes/<int:vote_id>", views.VoteDetailView.as_view(), name="vote_detail"),
+    path("votes/<int:vote_id>/ballot", views.VoteBallotView.as_view(), name="vote_ballot"),
 ]

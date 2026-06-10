@@ -1,5 +1,5 @@
 import axios from 'axios'
-import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteStatusResponse, RecoveryPiece, AllRecoveryResponse, SalvoScheduleResponse } from '@/types'
+import type { Team, TeamDetailed, TeamStatus, Frequency, GpsFrequencies, SiteStatusResponse, RecoveryPiece, AllRecoveryResponse, SalvoScheduleResponse, Vote } from '@/types'
 
 const BASE_URL = import.meta.env.DEV
   ? 'http://localhost:8000/api'
@@ -78,3 +78,14 @@ export const getSchedule = () =>
   api.get<SalvoScheduleResponse>('/team_tracking/schedule').then(r => r.data)
 export const postSalvoTimer = (action: 'start' | 'clear') =>
   api.post('/team_tracking/schedule/timer', { action }).then(r => r.data)
+
+export const getVotes = (active?: boolean) => {
+  const params = active !== undefined ? `?active=${active}` : ''
+  return api.get<Vote[]>(`/team_tracking/votes${params}`).then(r => r.data)
+}
+export const createVote = (title: string, durationMinutes?: number) =>
+  api.post<Vote>('/team_tracking/votes', { title, duration_minutes: durationMinutes }).then(r => r.data)
+export const getVote = (id: number) =>
+  api.get<Vote>(`/team_tracking/votes/${id}`).then(r => r.data)
+export const castBallot = (voteId: number, choice: boolean) =>
+  api.post<Vote>(`/team_tracking/votes/${voteId}/ballot`, { choice }).then(r => r.data)

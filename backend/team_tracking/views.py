@@ -9,14 +9,16 @@ from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
+from django.db.models import Count, Q
 from .auth import IsAdmin, IsTeamMember, IsAdminOrTeamOwner
 from rest_framework.response import Response
 from rest_framework.views import APIView
 import rest_framework.status as drf_status
 
 from .serializers import TeamSerializer, SiteStatusSerializer, TeamStatusSerializer, TeamAbbreviatedSerializer, \
-    TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer, TrajectorySerializer
-from .models import SalvoSchedule, Team, TeamStatus, RecoveryPiece, SiteStatus, Trajectory
+    TeamDetailedSerializer, TeamWriteSerializer, RecoveryPieceSerializer, TrajectorySerializer, VoteSerializer
+from .models import SalvoSchedule, Team, TeamStatus, RecoveryPiece, SiteStatus, Trajectory, Vote, VoteBallot
+from django.contrib.auth.models import User
 
 @extend_schema(auth=[])
 def index(request):
@@ -522,3 +524,115 @@ class ScheduleTimerView(APIView):
         return Response({
             'salvo_timer_started': schedule.salvo_timer_started.isoformat() if schedule.salvo_timer_started else None,
         })
+
+
+def _broadcast_vote_update(vote):
+    """Serialize a Vote and broadcast to the 'votes' channel group."""
+    serializer = VoteSerializer(vote)
+    async_to_sync(get_channel_layer().group_send)(
+        'votes',
+        {'type': 'vote_update', 'data': serializer.data},
+    )
+
+
+class VoteListCreateView(APIView):
+    """List all votes or create a new vote. Requires authentication."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = []
+
+    def get(self, request) -> Response:
+        """Return all votes: active first, then by creation date."""
+        active = request.query_params.get('active')
+        if active == 'true':
+            votes = Vote.objects.filter(is_active=True).order_by('-created_at')
+        elif active == 'false':
+            votes = Vote.objects.filter(is_active=False).order_by('-created_at')
+        else:
+            votes = Vote.objects.all().order_by('-is_active', '-created_at')
+        serializer = VoteSerializer(votes, many=True)
+        return Response(serializer.data)
+
+    def post(self, request) -> Response:
+        """Create a new vote. Body: {"title": "...", "duration_minutes": 10}."""
+        title = request.data.get('title', '').strip()
+        if not title:
+            return Response({'error': 'title is required'}, status=drf_status.HTTP_400_BAD_REQUEST)
+        is_admin = bool(request.auth and request.auth.get('is_admin'))
+        duration = 10
+        if is_admin:
+            duration = int(request.data.get('duration_minutes', 10))
+            if duration < 1:
+                duration = 10
+        eligible_ids = list(
+            User.objects.filter(is_superuser=False).values_list('id', flat=True)
+        )
+        expires_at = timezone.now() + timezone.timedelta(minutes=duration)
+        vote = Vote.objects.create(
+            title=title,
+            created_by=request.user,
+            expires_at=expires_at,
+            duration_minutes=duration,
+            eligible_voters=eligible_ids,
+        )
+        _broadcast_vote_update(vote)
+        serializer = VoteSerializer(vote)
+        return Response(serializer.data, status=drf_status.HTTP_201_CREATED)
+
+
+class VoteDetailView(APIView):
+    """Retrieve a single vote by ID. Requires authentication."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = []
+
+    def get(self, request, vote_id: int) -> Response:
+        """Return a single vote with ballots."""
+        try:
+            vote = Vote.objects.get(id=vote_id)
+        except Vote.DoesNotExist:
+            return Response({'error': 'Vote not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+        serializer = VoteSerializer(vote)
+        return Response(serializer.data)
+
+
+class VoteBallotView(APIView):
+    """Cast a ballot on a vote. Requires authentication."""
+    permission_classes = [IsAuthenticated]
+    throttle_classes = []
+
+    def post(self, request, vote_id: int) -> Response:
+        """Cast a ballot. Body: {"choice": true} for Yes, {"choice": false} for No."""
+        try:
+            vote = Vote.objects.get(id=vote_id)
+        except Vote.DoesNotExist:
+            return Response({'error': 'Vote not found'}, status=drf_status.HTTP_404_NOT_FOUND)
+
+        if not vote.is_active:
+            return Response({'error': 'Voting has closed'}, status=drf_status.HTTP_400_BAD_REQUEST)
+
+        if timezone.now() >= vote.expires_at:
+            vote.is_active = False
+            vote.save()
+            _broadcast_vote_update(vote)
+            return Response({'error': 'Voting has expired'}, status=drf_status.HTTP_400_BAD_REQUEST)
+
+        if VoteBallot.objects.filter(vote=vote, user=request.user).exists():
+            return Response({'error': 'You have already voted'}, status=drf_status.HTTP_409_CONFLICT)
+
+        choice = request.data.get('choice')
+        if not isinstance(choice, bool):
+            return Response({'error': 'choice must be a boolean'}, status=drf_status.HTTP_400_BAD_REQUEST)
+
+        ballot = VoteBallot.objects.create(vote=vote, user=request.user, choice=choice)
+
+        # Check if all eligible voters have voted
+        eligible = vote.eligible_voters if isinstance(vote.eligible_voters, list) else []
+        voted_ids = set(VoteBallot.objects.filter(vote=vote).values_list('user_id', flat=True))
+        if all(uid in voted_ids for uid in eligible):
+            vote.is_active = False
+            vote.save()
+
+        _broadcast_vote_update(vote)
+        return Response(
+            VoteSerializer(vote).data,
+            status=drf_status.HTTP_201_CREATED,
+        )

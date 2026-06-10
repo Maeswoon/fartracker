@@ -4,10 +4,60 @@ from channels.generic.websocket import JsonWebsocketConsumer
 from channels_yroom.conf import get_room_settings
 from channels_yroom.consumer import YroomConsumer
 
+
+def _get_allowed_origins():
+    from django.conf import settings
+    allowed = {
+        'https://tracker.faroutlaunch.org',
+        'https://www.tracker.faroutlaunch.org',
+    }
+    if settings.DEBUG:
+        allowed.add('http://localhost:5173')
+        allowed.add('http://127.0.0.1:5173')
+    return allowed
+
+
+def _verify_origin(scope):
+    """Returns True if origin is present and in the allowed set."""
+    headers = dict(scope.get('headers', []))
+    origin = headers.get(b'origin', b'').decode()
+    if not origin:
+        return False
+    return origin in _get_allowed_origins()
+
+
+def _get_jwt_token(scope):
+    """Extract and validate the JWT access token from cookies. Returns the token or None."""
+    from django.conf import settings
+    from rest_framework_simplejwt.tokens import AccessToken
+
+    headers = dict(scope.get('headers', []))
+    cookie_header = headers.get(b'cookie', b'').decode()
+    cookies = {}
+    for item in cookie_header.split('; '):
+        if '=' in item:
+            key, _, value = item.partition('=')
+            cookies[key] = value
+
+    cookie_name = settings.SIMPLE_JWT.get('AUTH_COOKIE', 'access_token')
+    raw_token = cookies.get(cookie_name, '')
+    if not raw_token:
+        return None
+    try:
+        return AccessToken(raw_token)
+    except Exception:
+        return None
+
+
 class TrajectoryConsumer(JsonWebsocketConsumer):
     def connect(self):
         from .models import Trajectory
         from .serializers import TrajectorySerializer
+
+        if not _verify_origin(self.scope):
+            self.close(code=4003)
+            return
+
         async_to_sync(self.channel_layer.group_add)('trajectories', self.channel_name)
         self.accept()
         trajectories = Trajectory.objects.select_related('team').all()
@@ -19,6 +69,7 @@ class TrajectoryConsumer(JsonWebsocketConsumer):
 
     def trajectory_update(self, event):
         self.send_json({'type': 'update', 'trajectory': event['data']})
+
 
 class ScheduleConsumer(YroomConsumer):
     async def forward_payload(self, message):
@@ -33,45 +84,12 @@ class ScheduleConsumer(YroomConsumer):
         self.conn_id = self.get_connection_id()
         self.room_settings = get_room_settings(self.room_name)
 
-        from django.conf import settings
-        from rest_framework_simplejwt.tokens import AccessToken
+        if not _verify_origin(self.scope):
+            await self.close(code=4003)
+            return
 
-        headers = dict(self.scope.get('headers', []))
-        origin = headers.get(b'origin', b'').decode()
-
-        # Reject cross-origin WebSocket connections to prevent CSRF/CSRH.
-        # When Origin is absent (native apps, curl, server-side clients)
-        # there is no cross-origin risk, so we allow it.
-        if origin:
-            allowed = {
-                'https://tracker.faroutlaunch.org',
-                'https://www.tracker.faroutlaunch.org',
-            }
-            if settings.DEBUG:
-                allowed.add('http://localhost:5173')
-                allowed.add('http://127.0.0.1:5173')
-            if origin not in allowed:
-                await self.close(code=4003)
-                return
-
-        cookie_header = headers.get(b'cookie', b'').decode()
-        cookies = {}
-        for item in cookie_header.split('; '):
-            if '=' in item:
-                key, _, value = item.partition('=')
-                cookies[key] = value
-
-        cookie_name = settings.SIMPLE_JWT.get('AUTH_COOKIE', 'access_token')
-        raw_token = cookies.get(cookie_name, '')
-
-        is_admin = False
-        if raw_token:
-            try:
-                token = AccessToken(raw_token)
-                is_admin = token.get('is_admin', False)
-            except Exception as e:
-                pass
-        if not is_admin:
+        token = _get_jwt_token(self.scope)
+        if not token or not token.get('is_admin', False):
             await self.close(code=4001)
             return
 
@@ -174,3 +192,26 @@ def _save_lanes(lanes_data, team_data=None, schedule_data=None):
                 ))
         if logs:
             ScheduleChangeLog.objects.bulk_create(logs)
+
+
+class VoteConsumer(JsonWebsocketConsumer):
+    """Broadcasts active votes and live ballot counts to all authenticated users."""
+
+    def connect(self):
+        if not _verify_origin(self.scope):
+            self.close(code=4003)
+            return
+
+        token = _get_jwt_token(self.scope)
+        if not token:
+            self.close(code=4001)
+            return
+
+        async_to_sync(self.channel_layer.group_add)('votes', self.channel_name)
+        self.accept()
+
+    def disconnect(self, close_code):
+        async_to_sync(self.channel_layer.group_discard)('votes', self.channel_name)
+
+    def vote_update(self, event):
+        self.send_json({'type': 'update', 'vote': event['data']})

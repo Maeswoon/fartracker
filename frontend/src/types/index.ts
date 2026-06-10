@@ -105,3 +105,25 @@ export interface SalvoScheduleResponse {
   salvo_timer_started: string | null
   teams: ScheduleTeam[]
 }
+
+export interface VoteBallot {
+  id: number
+  user: string
+  choice: boolean
+  cast_at: string
+}
+
+export interface Vote {
+  id: number
+  title: string
+  created_by: string
+  created_at: string
+  expires_at: string
+  duration_minutes: number
+  is_active: boolean
+  eligible_count: number
+  ballots: VoteBallot[]
+  yes_count: number
+  no_count: number
+  quorum_met: boolean
+}

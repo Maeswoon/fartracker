@@ -162,3 +162,34 @@ class ScheduleChangeLog(models.Model):
 
     def __str__(self):
         return f"Change for {self.team_identifier} at {self.timestamp.isoformat()}"
+
+
+class Vote(models.Model):
+    title = models.CharField(max_length=300)
+    created_by = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='votes')
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    duration_minutes = models.PositiveSmallIntegerField(default=10)
+    is_active = models.BooleanField(default=True)
+    eligible_voters = models.JSONField(default=list)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Vote: {self.title} (active={self.is_active})"
+
+
+class VoteBallot(models.Model):
+    vote = models.ForeignKey(Vote, on_delete=models.CASCADE, related_name='ballots')
+    user = models.ForeignKey('auth.User', on_delete=models.CASCADE, related_name='ballots')
+    choice = models.BooleanField()
+    cast_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['vote', 'user'], name='unique_ballot_per_vote'),
+        ]
+
+    def __str__(self):
+        return f"Ballot by {self.user.username} on {self.vote.title}"

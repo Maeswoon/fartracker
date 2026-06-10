@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib import admin
 
-from .models import Team, LaunchRail, Bunker, SiteStatus, SalvoSchedule, ScheduleChangeLog
+from .models import Team, LaunchRail, Bunker, SiteStatus, SalvoSchedule, ScheduleChangeLog, Vote, VoteBallot
 
 # Register your models here.
 admin.site.register(Team)
@@ -29,4 +29,20 @@ class ScheduleChangeLogAdmin(admin.ModelAdmin):
     readonly_fields = ['timestamp', 'team_identifier', 'data']
     list_filter = ['team_identifier']
     ordering = ['-timestamp']
+
+
+@admin.register(Vote)
+class VoteAdmin(admin.ModelAdmin):
+    list_display = ['title', 'created_by', 'created_at', 'expires_at', 'is_active']
+    readonly_fields = ['created_at', 'created_by', 'eligible_voters']
+    list_filter = ['is_active']
+    ordering = ['-created_at']
+
+
+@admin.register(VoteBallot)
+class VoteBallotAdmin(admin.ModelAdmin):
+    list_display = ['vote', 'user', 'choice', 'cast_at']
+    readonly_fields = ['cast_at']
+    list_filter = ['vote']
+    ordering = ['-cast_at']
 

@@ -9,6 +9,7 @@ const routes = [
   { path: '/schedule', component: () => import('@/views/ScheduleView.vue') },
   { path: '/login', component: () => import('@/views/LoginView.vue') },
   { path: '/admin', component: () => import('@/views/AdminView.vue'), meta: { requiresAdmin: true } },
+  { path: '/votes', component: () => import('@/views/VotesView.vue'), meta: { requiresAuth: true } },
 ]
 
 export const router = createRouter({
@@ -17,10 +18,10 @@ export const router = createRouter({
 })
 
 router.beforeEach(async (to) => {
-  if (to.meta.requiresAdmin) {
+  if (to.meta.requiresAuth || to.meta.requiresAdmin) {
     try {
       const user = await getCurrentUser()
-      if (!user.is_admin) return '/'
+      if (to.meta.requiresAdmin && !user.is_admin) return '/'
     } catch {
       return '/login'
     }

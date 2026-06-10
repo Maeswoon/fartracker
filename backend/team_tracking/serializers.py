@@ -1,6 +1,6 @@
 from functools import lru_cache
 from rest_framework import serializers
-from .models import Team, LaunchRail, Bunker, SiteStatus, TeamStatus, RecoveryPiece, Trajectory
+from .models import Team, LaunchRail, Bunker, SiteStatus, TeamStatus, RecoveryPiece, Trajectory, Vote, VoteBallot
 
 def _get_lane_of_team(team_identifier: str) -> str | None:
     """Return the short_label of the lane a team is in, defaulting to 'Pending'."""
@@ -149,4 +149,46 @@ class TrajectorySerializer(serializers.ModelSerializer):
         model = Trajectory
         fields = ['id', 'team_identifier', 'team_name', 'points', 'updated_at']
         read_only_fields = ['id', 'updated_at']
+
+
+class VoteBallotSerializer(serializers.ModelSerializer):
+    user = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = VoteBallot
+        fields = ['id', 'user', 'choice', 'cast_at']
+        read_only_fields = ['id', 'cast_at']
+
+
+class VoteSerializer(serializers.ModelSerializer):
+    created_by = serializers.CharField(source='created_by.username', read_only=True)
+    ballots = VoteBallotSerializer(many=True, read_only=True)
+    yes_count = serializers.SerializerMethodField()
+    no_count = serializers.SerializerMethodField()
+    eligible_count = serializers.SerializerMethodField()
+    quorum_met = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Vote
+        fields = ['id', 'title', 'created_by', 'created_at', 'expires_at',
+                  'duration_minutes', 'is_active', 'eligible_voters', 'eligible_count',
+                  'ballots', 'yes_count', 'no_count', 'quorum_met']
+        read_only_fields = ['id', 'created_at', 'created_by', 'eligible_voters',
+                           'eligible_count', 'ballots', 'yes_count', 'no_count', 'quorum_met']
+
+    def get_yes_count(self, obj):
+        return sum(1 for b in obj.ballots.all() if b.choice is True)
+
+    def get_no_count(self, obj):
+        return sum(1 for b in obj.ballots.all() if b.choice is False)
+
+    def get_eligible_count(self, obj):
+        return len(obj.eligible_voters) if isinstance(obj.eligible_voters, list) else 0
+
+    def get_quorum_met(self, obj):
+        eligible = self.get_eligible_count(obj)
+        if eligible == 0:
+            return True
+        total = self.get_yes_count(obj) + self.get_no_count(obj)
+        return total * 2 >= eligible
 

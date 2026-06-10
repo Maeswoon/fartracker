@@ -4,7 +4,7 @@ import type { Feature, FeatureCollection } from 'geojson'
 import mapboxgl from 'mapbox-gl'
 import { Threebox } from 'threebox-plugin'
 import * as togeojson from '@mapbox/togeojson'
-import { getMapboxToken, getTrajectoryWsUrl } from '@/config'
+import { getMapboxToken, getWsBaseUrl } from '@/config'
 import { getTeamsAbbreviated, getAllRecoveryPieces } from '@/api'
 import { useAuthStore } from '@/stores/auth'
 import type { Team, RecoveryPiece, RecoveryPath } from '@/types'
@@ -394,7 +394,7 @@ onMounted(async () => {
   watch(showTrajectories, (val) => {
     map?.easeTo({ pitch: val ? 60 : 0, zoom: val ? 9.5 : 12.5, center: [-117.80898, 35.34715] })
     if (val) {
-      ws = new WebSocket(getTrajectoryWsUrl())
+      ws = new WebSocket(`${getWsBaseUrl()}trajectories/`)
       ws.onmessage = (event) => {
         const msg = JSON.parse(event.data)
         const source = map?.getSource('trajectories') as mapboxgl.GeoJSONSource | undefined

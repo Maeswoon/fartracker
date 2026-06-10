@@ -39,6 +39,7 @@ function logout() {
       <RouterLink to="/" class="nav-link">Home</RouterLink>
       <RouterLink to="/recovery" class="nav-link">Recovery</RouterLink>
       <RouterLink to="/schedule" class="nav-link">Schedule</RouterLink>
+      <RouterLink v-if="auth.user" to="/votes" class="nav-link">Votes</RouterLink>
       <template v-if="auth.user?.is_admin">
         <RouterLink to="/frequencies" class="nav-link">Frequencies</RouterLink>
         <RouterLink to="/admin" class="nav-link">Admin</RouterLink>
@@ -51,6 +52,7 @@ function logout() {
         <RouterLink to="/" @click="close" class="mobile-link">Home</RouterLink>
         <RouterLink to="/recovery" @click="close" class="mobile-link">Recovery</RouterLink>
         <RouterLink to="/schedule" @click="close" class="mobile-link">Schedule</RouterLink>
+        <RouterLink v-if="auth.user" to="/votes" @click="close" class="mobile-link">Votes</RouterLink>
         <template v-if="auth.user?.is_admin">
           <RouterLink to="/frequencies" @click="close" class="mobile-link">Frequencies</RouterLink>
           <RouterLink to="/admin" @click="close" class="mobile-link">Admin</RouterLink>

@@ -1,7 +1,7 @@
 import { ref, watch, onUnmounted, type Ref } from 'vue'
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
-import { getScheduleWsUrl } from '@/config'
+import { getWsBaseUrl } from '@/config'
 import { getSchedule, getCurrentUser } from '@/api'
 import { router } from '@/router'
 import type { ScheduleLane, ScheduleTeam } from '@/types'
@@ -131,7 +131,7 @@ export function useSchedule(isAdmin: Ref<boolean>) {
 
   function initYjs() {
     ydoc = new Y.Doc()
-    provider = new WebsocketProvider(getScheduleWsUrl(), 'schedule', ydoc)
+    provider = new WebsocketProvider(getWsBaseUrl(), 'schedule', ydoc)
 
     provider.on('status', (event: { status: string }) => {
       connected.value = event.status === 'connected'
